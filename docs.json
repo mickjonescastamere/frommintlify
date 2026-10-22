@@ -11,6 +11,34 @@
   "navigation": {
     "tabs": [
       {
+        "tab": "API reference",
+        "icon": "square-terminal",
+        "groups": [
+          {
+            "group": "Overview",
+            "icon": "circle-info",
+            "pages": [
+              "api-reference/introduction",
+              "api-reference/authentication",
+              "api-reference/errors",
+              "api-reference/pagination",
+              "api-reference/rate-limits"
+            ]
+          },
+          {
+            "group": "Resources",
+            "icon": "brackets-curly",
+            "pages": [
+              "api-reference/applications",
+              "api-reference/endpoints",
+              "api-reference/messages",
+              "api-reference/event-types",
+              "api-reference/portal-access"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "Documentation",
         "icon": "book-open",
         "groups": [
@@ -106,34 +134,6 @@
               "cli/install-and-login",
               "cli/local-development",
               "cli/command-reference"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "API reference",
-        "icon": "square-terminal",
-        "groups": [
-          {
-            "group": "Overview",
-            "icon": "circle-info",
-            "pages": [
-              "api-reference/introduction",
-              "api-reference/authentication",
-              "api-reference/errors",
-              "api-reference/pagination",
-              "api-reference/rate-limits"
-            ]
-          },
-          {
-            "group": "Resources",
-            "icon": "brackets-curly",
-            "pages": [
-              "api-reference/applications",
-              "api-reference/endpoints",
-              "api-reference/messages",
-              "api-reference/event-types",
-              "api-reference/portal-access"
             ]
           }
         ]

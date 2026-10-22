@@ -11,31 +11,6 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "SDKs and CLI",
-        "icon": "code",
-        "groups": [
-          {
-            "group": "SDKs",
-            "icon": "cube",
-            "pages": [
-              "sdks/overview",
-              "sdks/node",
-              "sdks/python",
-              "sdks/go"
-            ]
-          },
-          {
-            "group": "CLI",
-            "icon": "terminal",
-            "pages": [
-              "cli/install-and-login",
-              "cli/local-development",
-              "cli/command-reference"
-            ]
-          }
-        ]
-      },
-      {
         "tab": "API reference",
         "icon": "square-terminal",
         "groups": [
@@ -59,6 +34,31 @@
               "api-reference/messages",
               "api-reference/event-types",
               "api-reference/portal-access"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "SDKs and CLI",
+        "icon": "code",
+        "groups": [
+          {
+            "group": "SDKs",
+            "icon": "cube",
+            "pages": [
+              "sdks/overview",
+              "sdks/node",
+              "sdks/python",
+              "sdks/go"
+            ]
+          },
+          {
+            "group": "CLI",
+            "icon": "terminal",
+            "pages": [
+              "cli/install-and-login",
+              "cli/local-development",
+              "cli/command-reference"
             ]
           }
         ]

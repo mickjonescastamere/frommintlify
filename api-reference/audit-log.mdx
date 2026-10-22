@@ -1,0 +1,143 @@
+---
+title: "Audit log"
+description: "Read the workspace audit log to see who changed what, and stream entries into your SIEM."
+icon: "clipboard-list"
+---
+
+import PlanAvailability from "/snippets/plan-availability.mdx";
+import PaginationParams from "/snippets/pagination-params.mdx";
+
+<PlanAvailability plan="Enterprise" />
+
+The audit log records every administrative action in your workspace, such as role changes, API key rolls, and secret rotations. The API is read-only: nobody can edit or delete entries. For what each category covers, see the [audit log guide](/features/audit-log).
+
+Audit log endpoints need an API key with the `full` or `read_only` scope. A `send_only` key gets a `403` `permission_error`.
+
+## The audit log entry object
+
+<ResponseField name="id" type="string">
+  Unique identifier, prefixed with `aud_`.
+</ResponseField>
+<ResponseField name="action" type="string">
+  What happened, in `resource.action` form, such as `endpoint.secret.rotated` or `member.role.changed`.
+</ResponseField>
+<ResponseField name="actor" type="object">
+  Who performed the action.
+
+  <Expandable title="properties">
+    <ResponseField name="type" type="string">
+      Either `member` or `api_key`.
+    </ResponseField>
+    <ResponseField name="email" type="string">
+      Email of the member. Present when `type` is `member`.
+    </ResponseField>
+    <ResponseField name="name" type="string">
+      Name of the API key. Present when `type` is `api_key`.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+<ResponseField name="target" type="object">
+  The object the action applied to, with its `type` (such as `endpoint`, `api_key`, or `member`) and `id`.
+</ResponseField>
+<ResponseField name="changes" type="object | null">
+  `before` and `after` values for fields that changed. Secrets are never included, only the fact that they changed.
+</ResponseField>
+<ResponseField name="ip_address" type="string">
+  Source IP address of the request.
+</ResponseField>
+<ResponseField name="created_at" type="string">
+  ISO 8601 time of the action.
+</ResponseField>
+
+## List audit log entries
+
+`GET /audit-log`
+
+Returns entries newest first. Entries are kept for 1 year.
+
+<PaginationParams />
+
+<ParamField query="action" type="string">
+  Only return entries with this action, such as `api_key.rolled`.
+</ParamField>
+<ParamField query="actor" type="string">
+  Only return entries by this member email or API key name.
+</ParamField>
+<ParamField query="since" type="string">
+  Only return entries created at or after this ISO 8601 time.
+</ParamField>
+<ParamField query="until" type="string">
+  Only return entries created before this ISO 8601 time.
+</ParamField>
+
+<CodeGroup>
+
+```bash cURL
+curl "https://api.hookline.example/v1/audit-log?action=endpoint.secret.rotated&since=2026-10-01T00:00:00Z" \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY"
+```
+
+```javascript Node.js
+for await (const entry of hookline.auditLog.listAll({ since: "2026-10-01T00:00:00Z" })) {
+  console.log(entry.created_at, entry.actor, entry.action);
+}
+```
+
+</CodeGroup>
+
+```json Response
+{
+  "data": [
+    {
+      "id": "aud_4Rt7",
+      "action": "endpoint.secret.rotated",
+      "actor": { "type": "member", "email": "dana@yourcompany.example" },
+      "target": { "type": "endpoint", "id": "ep_7Qm3" },
+      "changes": null,
+      "ip_address": "203.0.113.24",
+      "created_at": "2026-10-22T15:04:11Z"
+    }
+  ],
+  "iterator": "aud_4Rt7",
+  "done": false
+}
+```
+
+## Retrieve an audit log entry
+
+`GET /audit-log/{entry_id}`
+
+<ParamField path="entry_id" type="string" required>
+  The `aud_` ID of the entry.
+</ParamField>
+
+```bash cURL
+curl https://api.hookline.example/v1/audit-log/aud_9Kp2 \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY"
+```
+
+```json Response
+{
+  "id": "aud_9Kp2",
+  "action": "member.role.changed",
+  "actor": { "type": "member", "email": "owner@yourcompany.example" },
+  "target": { "type": "member", "id": "mem_2Hs8" },
+  "changes": { "before": { "role": "developer" }, "after": { "role": "admin" } },
+  "ip_address": "198.51.100.7",
+  "created_at": "2026-10-21T08:12:45Z"
+}
+```
+
+## Stream entries into a SIEM
+
+To keep a SIEM up to date, poll on a schedule and pass the newest `created_at` you've stored as `since`. Deduplicate on `id`, because entries created at the same second can appear in two polls.
+
+<Tip>
+  Poll every few minutes. The audit log endpoints share your workspace's [API rate limit](/api-reference/rate-limits), so avoid polling more than once a minute.
+</Tip>
+
+## Related
+
+- [Audit log guide](/features/audit-log)
+- [Roles and permissions](/security/roles-and-permissions)
+- [Pagination](/api-reference/pagination)

@@ -33,7 +33,8 @@
               "api-reference/endpoints",
               "api-reference/messages",
               "api-reference/event-types",
-              "api-reference/portal-access"
+              "api-reference/portal-access",
+              "api-reference/audit-log"
             ]
           }
         ]

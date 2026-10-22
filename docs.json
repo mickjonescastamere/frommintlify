@@ -36,7 +36,8 @@
           {
             "group": "Test Group",
             "pages": [
-              "sample-page"
+              "sample-page",
+              "sample-page-1"
             ]
           }
         ]

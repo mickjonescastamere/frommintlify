@@ -1,0 +1,119 @@
+---
+title: "Go SDK"
+sidebarTitle: "Go"
+description: "Install and use hookline-go to send messages and verify webhooks in Go."
+icon: "golang"
+---
+
+import ApiKeyWarning from "/snippets/api-key-warning.mdx";
+
+The Go SDK supports Go 1.21 and later. Every method takes a `context.Context` for cancellation and deadlines.
+
+## Install
+
+```bash
+go get github.com/hookline/hookline-go
+```
+
+## Initialize the client
+
+```go
+import (
+	"os"
+
+	hookline "github.com/hookline/hookline-go"
+)
+
+client := hookline.New(os.Getenv("HOOKLINE_API_KEY"), nil)
+```
+
+Pass `&hookline.Options{...}` instead of `nil` to change the server URL, retries, or HTTP client.
+
+<ApiKeyWarning />
+
+## Send a message
+
+```go
+ctx := context.Background()
+
+_, err := client.Application.Create(ctx, &hookline.ApplicationIn{
+	Name: "Acme Corp",
+	UID:  hookline.String("cus_1931"),
+})
+if err != nil {
+	return err
+}
+
+msg, err := client.Message.Create(ctx, "cus_1931", &hookline.MessageIn{
+	EventType: "invoice.paid",
+	EventID:   hookline.String("evt_2bX9"),
+	Payload: map[string]any{
+		"type": "invoice.paid",
+		"id":   "evt_2bX9",
+		"data": map[string]any{"invoice_id": "inv_8842", "amount": 4900, "currency": "usd"},
+	},
+})
+if err != nil {
+	return err
+}
+fmt.Println(msg.ID) // msg_...
+```
+
+## Iterate over lists
+
+```go
+iter := client.Application.List(ctx, &hookline.ListOptions{Limit: 100})
+for iter.Next() {
+	app := iter.Current()
+	fmt.Println(app.UID, app.Name)
+}
+if err := iter.Err(); err != nil {
+	return err
+}
+```
+
+## Handle errors
+
+```go
+var apiErr *hookline.Error
+if errors.As(err, &apiErr) {
+	log.Printf("status=%d code=%s request_id=%s", apiErr.Status, apiErr.Code, apiErr.RequestID)
+}
+```
+
+## Verify incoming webhooks
+
+```go
+wh, err := hookline.NewWebhook(os.Getenv("HOOKLINE_WEBHOOK_SECRET"))
+if err != nil {
+	log.Fatal(err)
+}
+
+http.HandleFunc("/webhooks", func(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if err := wh.Verify(body, r.Header); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	// decode body and handle the event
+	w.WriteHeader(http.StatusNoContent)
+})
+```
+
+## Configuration options
+
+| Field        | Default                           | Description                                     |
+| ------------ | --------------------------------- | ----------------------------------------------- |
+| `ServerURL`  | `https://api.hookline.example/v1` | API base URL. Use the EU URL for EU workspaces. |
+| `MaxRetries` | `2`                               | Retries for `429` and `5xx` responses.          |
+| `HTTPClient` | `http.DefaultClient`              | Custom client, for proxies or timeouts.         |
+
+## Related
+
+- [SDKs overview](/sdks/overview)
+- [Verifying signatures](/security/verifying-signatures)
+- [API reference](/api-reference/introduction)

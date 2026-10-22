@@ -1,0 +1,78 @@
+---
+title: "Channels"
+description: "Route messages to specific endpoints with channels, beyond filtering by event type."
+icon: "route"
+---
+
+import PlanAvailability from "/snippets/plan-availability.mdx";
+
+<PlanAvailability plan="Pro" />
+
+Event types filter by **what** happened. Channels filter by **where** it happened or **who** it's for. A channel is a free-form string tag, such as `project_123` or `region_eu`, that you set on both messages and endpoints.
+
+## How matching works
+
+| Endpoint channels           | Message channels          | Delivered? |
+| --------------------------- | ------------------------- | ---------- |
+| None                        | Any, or none              | Yes        |
+| `project_123`               | `project_123`             | Yes        |
+| `project_123`, `project_456`| `project_456`             | Yes        |
+| `project_123`               | `project_789`             | No         |
+| `project_123`               | None                      | No         |
+
+An endpoint with channels receives only messages that share at least one channel with it. An endpoint without channels receives every message that matches its event types.
+
+Event type filters still apply. A message must match both the endpoint's event types and its channels.
+
+## Common uses
+
+<CardGroup cols={2}>
+  <Card title="Sub-accounts" icon="folder-tree">
+    One customer with many projects. Tag messages with the project ID so each endpoint receives only its project's events.
+  </Card>
+  <Card title="Environments" icon="server">
+    Customers with staging and production URLs. Tag messages with `env_staging` or `env_production`.
+  </Card>
+  <Card title="Teams" icon="people-group">
+    Route billing events to the finance team's endpoint and product events elsewhere.
+  </Card>
+  <Card title="Regions" icon="globe">
+    Keep EU data on EU-hosted receivers by tagging with `region_eu`.
+  </Card>
+</CardGroup>
+
+## Set channels on an endpoint
+
+```bash
+curl -X PATCH https://api.hookline.example/v1/applications/cus_1931/endpoints/ep_7Xc1Rt \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "channels": ["project_123"] }'
+```
+
+## Send a message to a channel
+
+```bash
+curl https://api.hookline.example/v1/applications/cus_1931/messages \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_type": "order.shipped",
+    "channels": ["project_123"],
+    "payload": { "type": "order.shipped", "data": { "order_id": "ord_5521" } }
+  }'
+```
+
+## Limits
+
+- Up to 10 channels per message and per endpoint.
+- Channel names are case-sensitive, up to 128 characters, and can contain letters, digits, `_`, `-`, and `.`.
+
+<Note>
+  Channels aren't a security boundary. Anyone who manages an endpoint in the consumer portal can change its channels. Use separate [applications](/sending/applications) when customers must never see each other's events.
+</Note>
+
+## Related
+
+- [Messages](/sending/messages)
+- [Event types](/sending/event-types)

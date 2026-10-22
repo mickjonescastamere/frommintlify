@@ -1,0 +1,106 @@
+---
+title: "Applications"
+description: "Model each of your customers as a Hookline application and manage it through its lifecycle."
+icon: "users"
+---
+
+import ApiKeyWarning from "/snippets/api-key-warning.mdx";
+
+An application represents one consumer of your webhooks, usually one of your customers. Every message you send targets exactly one application, and every endpoint belongs to exactly one application.
+
+## When to create an application
+
+Create one application per customer account in your product. Do this when the customer first turns on webhooks, not when they sign up. That keeps your application list small and meaningful.
+
+<Tip>
+  If one customer has several isolated sub-accounts, such as separate projects, you can create an application per sub-account. Alternatively, keep one application and route with [channels](/sending/channels).
+</Tip>
+
+## Create an application
+
+Set `uid` to your own customer ID. You can then use the `uid` anywhere the API expects an application ID.
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.hookline.example/v1/applications \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Acme Corp",
+    "uid": "cus_1931",
+    "metadata": { "plan": "enterprise", "region": "eu" }
+  }'
+```
+
+```javascript Node.js
+const app = await hookline.applications.create({
+  name: "Acme Corp",
+  uid: "cus_1931",
+  metadata: { plan: "enterprise", region: "eu" },
+});
+```
+
+```python Python
+app = hookline.applications.create(
+    name="Acme Corp",
+    uid="cus_1931",
+    metadata={"plan": "enterprise", "region": "eu"},
+)
+```
+
+</CodeGroup>
+
+```json Response
+{
+  "id": "app_2Lk8sQ",
+  "name": "Acme Corp",
+  "uid": "cus_1931",
+  "metadata": { "plan": "enterprise", "region": "eu" },
+  "rate_limit": null,
+  "created_at": "2026-10-23T09:12:44Z",
+  "updated_at": "2026-10-23T09:12:44Z"
+}
+```
+
+<ApiKeyWarning />
+
+## Application fields
+
+| Field        | Type    | Description                                                                  |
+| ------------ | ------- | ---------------------------------------------------------------------------- |
+| `id`         | string  | Hookline ID, prefixed with `app_`.                                           |
+| `name`       | string  | Display name shown in the dashboard and the consumer portal.                 |
+| `uid`        | string  | Optional. Your own unique ID for the application.                            |
+| `metadata`   | object  | Optional. Up to 50 key-value pairs for your own use.                         |
+| `rate_limit` | integer | Optional. Default deliveries per second for every endpoint in the application. |
+
+## Get or create in one call
+
+A common pattern is to look up an application by `uid` and create it only if it doesn't exist. Send the create request with an `Idempotency-Key` equal to the `uid`, or handle the `409` conflict:
+
+```javascript
+async function getOrCreateApp(customer) {
+  try {
+    return await hookline.applications.get(customer.id);
+  } catch (err) {
+    if (err.status !== 404) throw err;
+    return hookline.applications.create({ name: customer.name, uid: customer.id });
+  }
+}
+```
+
+## Update and delete
+
+- Rename an application or change its metadata with `PATCH /applications/{id}`. Changes to `name` show up in the consumer portal immediately.
+- Delete an application with `DELETE /applications/{id}` when the customer closes their account. Deleting removes all its endpoints and message history and can't be undone.
+
+<Warning>
+  Messages that are still being retried are canceled when you delete their application.
+</Warning>
+
+## Related
+
+- [Applications API](/api-reference/applications)
+- [Messages](/sending/messages)
+- [Consumer portal](/features/consumer-portal)

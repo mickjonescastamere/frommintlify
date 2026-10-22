@@ -1,0 +1,81 @@
+---
+title: "Event catalog"
+description: "Publish a browsable, always-current reference of the events your customers can subscribe to."
+icon: "book-open-reader"
+---
+
+The event catalog is a public page that lists your event types, their descriptions, and their payload schemas. Hookline builds it from your [event types](/sending/event-types), so it never drifts from what you actually send.
+
+## What the catalog shows
+
+For each non-archived event type, the catalog shows:
+
+- The name and description.
+- The JSON Schema, rendered as a field table.
+- An example payload generated from the schema, or the example you provide.
+- Whether the type is behind a feature flag. Flagged types are hidden from the public catalog.
+
+## Turn on the catalog
+
+<Steps>
+  <Step title="Open settings">
+    In the dashboard, go to **Settings** > **Event catalog**.
+  </Step>
+  <Step title="Enable the public page">
+    Turn on **Public event catalog**. Hookline publishes it at a URL like `https://catalog.hookline.example/your-workspace`.
+  </Step>
+  <Step title="Choose what to include">
+    Select which event types appear, or include them all. You can also group types by the resource prefix, such as `invoice` and `customer`.
+  </Step>
+  <Step title="Link to it">
+    Link to the catalog from your own developer docs, or show it inside the [consumer portal](/features/consumer-portal) under **Event catalog**.
+  </Step>
+</Steps>
+
+## Add examples to event types
+
+Generated examples are useful, but a hand-written example reads better. Add one with the `examples` keyword of JSON Schema:
+
+```json
+{
+  "name": "invoice.paid",
+  "description": "Sent when an invoice is paid in full.",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "invoice_id": { "type": "string" },
+      "amount": { "type": "integer" },
+      "currency": { "type": "string" }
+    },
+    "examples": [
+      { "invoice_id": "inv_8842", "amount": 4900, "currency": "usd" }
+    ]
+  }
+}
+```
+
+## Write descriptions consumers can act on
+
+A good event description answers three questions:
+
+1. **When** is the event sent?
+2. **What** does the payload contain, and what's missing?
+3. **What** should the consumer typically do with it?
+
+<Tip>
+  Example: "Sent when an invoice is paid in full. Partial payments send `invoice.payment_partial` instead. Use it to unlock paid features or send a receipt."
+</Tip>
+
+## Keep the catalog in sync
+
+Manage event types in code and sync them from your CI pipeline. A deploy that adds an event type then updates the catalog automatically.
+
+```bash
+hookline event-types list --env live
+```
+
+## Related
+
+- [Event types](/sending/event-types)
+- [Payload best practices](/sending/payload-best-practices)
+- [Event types API](/api-reference/event-types)

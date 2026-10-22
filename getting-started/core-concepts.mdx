@@ -1,0 +1,76 @@
+---
+title: "Core concepts"
+description: "Understand the objects Hookline uses to model and deliver webhooks."
+icon: "diagram-project"
+---
+
+Hookline sits between your app and your customers' servers. You send an event to Hookline once. Hookline fans it out, signs it, delivers it, retries failures, and keeps a log of every attempt.
+
+## How the objects fit together
+
+```text
+Workspace (ws_)
+└── Environment: test | live
+    ├── Event types          invoice.paid, customer.created, ...
+    └── Applications (app_)  one per customer
+        ├── Endpoints (ep_)  URLs that receive webhooks
+        └── Messages (msg_)  events sent to this application
+            └── Attempts (atmpt_)  one per delivery try, per endpoint
+```
+
+## Workspace
+
+A workspace is the top-level container for your team, billing, and settings. Each workspace lives in one region, `us` or `eu`, which you choose at creation. See [Workspaces](/account/workspaces).
+
+## Environments
+
+Every workspace has a `test` and a `live` environment. Data is fully isolated between them, and each has its own API keys. See [Environments](/getting-started/environments).
+
+## Applications
+
+An application represents one of your customers, the consumer of your webhooks. Give each application a `uid` that matches your own customer ID so you can address it without storing Hookline IDs. See [Applications](/sending/applications).
+
+## Endpoints
+
+An endpoint is a URL inside an application. An application can have many endpoints, and each one can subscribe to a subset of event types or [channels](/sending/channels). Every endpoint has its own signing secret.
+
+## Event types
+
+An event type names a kind of event, such as `invoice.paid`. Names follow the `resource.action` pattern. You can attach a JSON Schema to each type and publish them in the [event catalog](/sending/event-catalog). See [Event types](/sending/event-types).
+
+## Messages
+
+A message is one event sent to one application. When you create a message, Hookline delivers it to every endpoint in that application whose filters match. See [Messages](/sending/messages).
+
+## Attempts
+
+An attempt is a single delivery try to a single endpoint. Hookline records the status code, the first 4 KB of the response body, and the duration. Failed attempts are retried on a fixed [schedule](/delivery/retry-schedule).
+
+| Attempt status | Meaning                                                 |
+| -------------- | ------------------------------------------------------- |
+| `sending`      | The request is in flight.                               |
+| `success`      | The endpoint returned a 2xx response within 15 seconds. |
+| `pending`      | The attempt failed and another retry is scheduled.      |
+| `failed`       | All retries are exhausted.                              |
+
+## The lifecycle of a webhook
+
+<Steps>
+  <Step title="You create a message">
+    Your app calls the [messages API](/api-reference/messages) with an event type and a payload.
+  </Step>
+  <Step title="Hookline fans out">
+    Hookline finds every enabled endpoint in the application that matches the event type and channels.
+  </Step>
+  <Step title="Hookline signs and delivers">
+    Each delivery carries `webhook-id`, `webhook-timestamp`, and `webhook-signature` headers. See [Verifying signatures](/security/verifying-signatures).
+  </Step>
+  <Step title="Hookline retries failures">
+    Non-2xx responses and timeouts are retried up to eight times over about 27 hours.
+  </Step>
+</Steps>
+
+## Next steps
+
+- [Quickstart](/getting-started/quickstart)
+- [Glossary](/getting-started/glossary)

@@ -1,0 +1,86 @@
+---
+title: "API keys"
+description: "Create, scope, and roll the keys your servers use to call the Hookline API."
+icon: "key-skeleton"
+---
+
+import ApiKeyWarning from "/snippets/api-key-warning.mdx";
+
+Your servers authenticate to the Hookline API with an API key sent as a bearer token. Each key belongs to a single environment and carries a scope that limits what it can do.
+
+<ApiKeyWarning />
+
+## Key format
+
+| Prefix     | Environment | Example                            |
+| ---------- | ----------- | ---------------------------------- |
+| `hl_test_` | Test        | `hl_test_4eC39HqLyjWDarjtT1zdp7dc` |
+| `hl_live_` | Live        | `hl_live_9KxP2mQr8vLs0aBn3cYt6wZe` |
+
+A test key can only access test data, and a live key can only access live data. See [Environments](/getting-started/environments).
+
+## Scopes
+
+Choose the narrowest scope that works for each service.
+
+| Scope       | Can do                                 | Typical use                           |
+| ----------- | -------------------------------------- | ------------------------------------- |
+| `full`      | Every API operation                    | Admin tooling, provisioning scripts   |
+| `read_only` | `GET` requests only                    | Dashboards, monitoring, support tools |
+| `send_only` | Create messages only                   | Application servers that emit events  |
+
+A request outside the key's scope fails with `403` and an error of type `permission_error`.
+
+<Tip>
+  Most application servers only send events. Give them a `send_only` key, so a leaked key can't be used to read message payloads or delete endpoints.
+</Tip>
+
+## Create a key
+
+1. In the dashboard, go to **Settings** > **API keys**.
+2. Select the environment: **Test** or **Live**.
+3. Click **Create key**, enter a name such as `billing-service`, and choose a scope.
+4. Copy the key. Hookline shows the full key only once.
+
+Owners, Admins, and Developers can create test keys. Only Owners and Admins can create live keys. See [Roles and permissions](/security/roles-and-permissions).
+
+## Use a key
+
+```bash
+curl https://api.hookline.example/v1/applications \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY"
+```
+
+In the SDKs, load the key from the environment:
+
+```javascript
+import { Hookline } from "@hookline/node";
+
+const hookline = new Hookline(process.env.HOOKLINE_API_KEY);
+```
+
+## Roll a key
+
+Rolling replaces a key with a new value. You can expire the old key immediately, or keep it valid for up to 7 days while you deploy the new one.
+
+<Steps>
+  <Step title="Roll the key">
+    In **Settings** > **API keys**, open the key's menu and click **Roll key**. Choose when the old key expires.
+  </Step>
+  <Step title="Deploy the new key">
+    Update the value in your secret manager and redeploy the services that use it.
+  </Step>
+  <Step title="Watch for errors">
+    After the old key expires, requests that still use it fail with `401`. The key's **Last used** column shows when Hookline last saw it.
+  </Step>
+</Steps>
+
+## Leaked keys
+
+If a key is exposed, for example committed to a public repository, roll it with **Expire now**. Then review recent activity in the [audit log](/features/audit-log) for unexpected changes.
+
+## Related
+
+- [Authentication](/api-reference/authentication)
+- [Roles and permissions](/security/roles-and-permissions)
+- [Rate limits](/api-reference/rate-limits)

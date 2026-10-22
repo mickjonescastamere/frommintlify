@@ -1,0 +1,93 @@
+---
+title: "Transformations"
+description: "Reshape payloads, change URLs, or cancel deliveries per endpoint with a small JavaScript function."
+icon: "wand-magic-sparkles"
+---
+
+import PlanAvailability from "/snippets/plan-availability.mdx";
+
+<PlanAvailability plan="Pro" />
+
+A transformation is a JavaScript function that runs just before Hookline delivers a message to a specific endpoint. Use it when a consumer needs a different payload shape than the one you send. For example, a chat tool may expect a single `text` field.
+
+Transformations run per endpoint. Every other endpoint in the application still receives the original message.
+
+## How transformations work
+
+Hookline calls your `handler` function with a `webhook` object and delivers whatever you return.
+
+| Property            | Type    | Description                                                     |
+| ------------------- | ------- | --------------------------------------------------------------- |
+| `webhook.payload`   | object  | The message payload. Change it freely.                          |
+| `webhook.url`       | string  | The destination URL. Defaults to the endpoint URL.              |
+| `webhook.method`    | string  | `POST` (default) or `PUT`.                                      |
+| `webhook.headers`   | object  | Extra headers to add to this delivery.                          |
+| `webhook.eventType` | string  | The event type of the message. Read-only.                       |
+| `webhook.cancel`    | boolean | Set to `true` to skip this delivery without counting a failure. |
+
+```javascript
+function handler(webhook) {
+  if (webhook.eventType === "invoice.paid") {
+    const { amount, currency, invoice_id } = webhook.payload.data;
+    webhook.payload = {
+      text: `Invoice ${invoice_id} paid: ${(amount / 100).toFixed(2)} ${currency.toUpperCase()}`,
+    };
+  }
+  return webhook;
+}
+```
+
+## Add a transformation
+
+<Steps>
+  <Step title="Open the endpoint">
+    In the dashboard, go to **Applications**, select the application, and click the endpoint.
+  </Step>
+  <Step title="Write the function">
+    Open the **Advanced** tab, then click **Edit transformation**. Paste your `handler` function into the editor.
+  </Step>
+  <Step title="Test it">
+    Pick an event type and a sample payload, then click **Run test**. The output panel shows the transformed `webhook` object.
+  </Step>
+  <Step title="Enable it">
+    Click **Save** and turn on **Enable transformation**. New deliveries to this endpoint use the function immediately.
+  </Step>
+</Steps>
+
+Your customers can also add transformations to their own endpoints from the [consumer portal](/features/consumer-portal) if you allow it.
+
+## Cancel a delivery
+
+Set `webhook.cancel = true` to drop a delivery for one endpoint. Hookline records the attempt as `success` with a note that a transformation canceled it.
+
+```javascript
+function handler(webhook) {
+  // This endpoint only cares about large invoices.
+  if (webhook.payload.data.amount < 10000) {
+    webhook.cancel = true;
+  }
+  return webhook;
+}
+```
+
+<Tip>
+  For simple routing, prefer [event type filters](/sending/event-types) or [channels](/sending/channels). They are faster and easier for your customers to understand.
+</Tip>
+
+## Limits
+
+- Each run has a 1 second CPU limit. A run that exceeds it fails the attempt, which then follows the normal [retry schedule](/delivery/retry-schedule).
+- Functions have no network access and no access to timers, the file system, or environment variables.
+- Hookline signs the transformed payload, so signature verification works the same way. See [Verifying signatures](/security/verifying-signatures).
+- You can't override the `webhook-id`, `webhook-timestamp`, `webhook-signature`, `content-type`, or `user-agent` headers.
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Custom headers" icon="heading" href="/features/custom-headers">
+    Add static headers to every delivery.
+  </Card>
+  <Card title="Consumer portal" icon="window-maximize" href="/features/consumer-portal">
+    Let customers manage their own transformations.
+  </Card>
+</CardGroup>

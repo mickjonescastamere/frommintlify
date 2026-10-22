@@ -1,0 +1,70 @@
+---
+title: "SDKs overview"
+sidebarTitle: "Overview"
+description: "Official Hookline libraries for Node.js, Python, and Go."
+icon: "cube"
+---
+
+import ApiKeyWarning from "/snippets/api-key-warning.mdx";
+
+Hookline's official SDKs wrap the REST API and include helpers to verify webhook signatures. Use them on your server to send messages, and give them to your customers to verify deliveries.
+
+<CardGroup cols={3}>
+  <Card title="Node.js" icon="node-js" href="/sdks/node">
+    `@hookline/node`
+  </Card>
+  <Card title="Python" icon="python" href="/sdks/python">
+    `hookline`
+  </Card>
+  <Card title="Go" icon="golang" href="/sdks/go">
+    `hookline-go`
+  </Card>
+</CardGroup>
+
+## What every SDK does for you
+
+| Feature                | Behavior                                                                      |
+| ---------------------- | ----------------------------------------------------------------------------- |
+| Authentication         | Reads the key from the `HOOKLINE_API_KEY` environment variable by default.    |
+| Automatic retries      | Retries `429` and `5xx` responses up to 2 times with exponential backoff.     |
+| Idempotency            | Adds an `Idempotency-Key` to every `POST` and reuses it on retry.             |
+| Typed errors           | Maps API errors to exceptions that carry `status`, `code`, and `request_id`.  |
+| Pagination helpers     | Iterates over every page of a list for you.                                   |
+| Signature verification | `Webhook` class that verifies headers and timestamps in constant time.        |
+
+<ApiKeyWarning />
+
+## Choose a region
+
+Workspaces live in either the `us` or `eu` region. SDKs default to the US API. For EU workspaces, set the server URL to `https://api.eu.hookline.example/v1`:
+
+<CodeGroup>
+
+```javascript Node.js
+const hookline = new Hookline(process.env.HOOKLINE_API_KEY, {
+  serverUrl: "https://api.eu.hookline.example/v1",
+});
+```
+
+```python Python
+hookline = Hookline(
+    os.environ["HOOKLINE_API_KEY"],
+    server_url="https://api.eu.hookline.example/v1",
+)
+```
+
+```go Go
+client := hookline.New(os.Getenv("HOOKLINE_API_KEY"), &hookline.Options{
+	ServerURL: "https://api.eu.hookline.example/v1",
+})
+```
+
+</CodeGroup>
+
+## Versioning
+
+SDKs follow semantic versioning. Minor releases add API features, and major releases change public interfaces. See the [changelog](/resources/changelog) for release notes.
+
+## Other languages
+
+There's no SDK for your language yet? The [REST API](/api-reference/introduction) works with any HTTP client. Signature verification takes about 20 lines of code; see [Verifying signatures](/security/verifying-signatures) for the algorithm.

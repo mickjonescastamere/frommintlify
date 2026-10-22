@@ -1,0 +1,92 @@
+---
+title: "Replaying messages"
+description: "Resend a single message or recover every failed message for an endpoint after an outage."
+icon: "repeat"
+---
+
+When an endpoint misses events, you don't need to re-create them. Hookline keeps every message for your plan's retention period, and you can deliver it again at any time.
+
+There are two ways to replay:
+
+| Method      | Scope                                                | Use it when                                    |
+| ----------- | ---------------------------------------------------- | ---------------------------------------------- |
+| **Resend**  | One message to one endpoint                          | A customer asks about a specific event         |
+| **Recover** | All failed messages for one endpoint since a time    | An endpoint was down or disabled for a while   |
+
+Replayed deliveries have the same `webhook-id` and payload as the original. They're signed with a new timestamp, and their attempts show `triggered_by: "manual"`.
+
+## Resend a single message
+
+<Tabs>
+  <Tab title="Dashboard">
+    1. Open the application and select the message.
+    2. In the **Attempts** table, find the endpoint.
+    3. Click **Resend**.
+  </Tab>
+  <Tab title="API">
+    ```bash
+    curl -X POST https://api.hookline.example/v1/applications/app_31xK/messages/msg_2bX9aQ7rT1/endpoints/ep_9QmW/resend \
+      -H "Authorization: Bearer $HOOKLINE_API_KEY"
+    ```
+  </Tab>
+  <Tab title="Node.js">
+    ```javascript
+    await hookline.messages.resend("app_31xK", "msg_2bX9aQ7rT1", "ep_9QmW");
+    ```
+  </Tab>
+</Tabs>
+
+You can resend messages that already succeeded, too. This is useful when a customer's system received the event but lost it.
+
+## Recover failed messages
+
+Recover redelivers every message that failed for an endpoint since a timestamp. You can go back up to **14 days**.
+
+<Tabs>
+  <Tab title="Dashboard">
+    1. Open the endpoint.
+    2. Click **Recover failed messages**.
+    3. Pick the start time, then click **Recover**.
+  </Tab>
+  <Tab title="API">
+    ```bash
+    curl -X POST https://api.hookline.example/v1/applications/app_31xK/endpoints/ep_9QmW/recover \
+      -H "Authorization: Bearer $HOOKLINE_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{ "since": "2026-10-20T00:00:00Z" }'
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    from datetime import datetime, timezone
+
+    hookline.endpoints.recover(
+        "app_31xK",
+        "ep_9QmW",
+        since=datetime(2026, 10, 20, tzinfo=timezone.utc),
+    )
+    ```
+  </Tab>
+</Tabs>
+
+Hookline delivers recovered messages in the order they were created, respecting the endpoint's [rate limit](/delivery/endpoint-rate-limits). A recovered message that fails again goes through the normal [retry schedule](/delivery/retry-schedule).
+
+<Warning>
+  Recover only includes messages that **failed** for the endpoint. Messages created while the endpoint was **disabled** were never attempted, so they don't appear as failed. To deliver those, resend them individually or ask your customer to request a backfill from your app.
+</Warning>
+
+## Before you replay
+
+- **Confirm the endpoint is fixed.** Replaying into a broken endpoint only adds more failures.
+- **Make sure the receiver deduplicates.** A recover can redeliver messages the receiver processed but didn't acknowledge. See [Replay protection](/security/replay-protection).
+- **Check retention.** You can't replay messages older than your plan's retention period: 30 days on Free and 90 days on Pro.
+
+## Self-service replay
+
+Customers can resend and recover messages for their own endpoints in the [consumer portal](/features/consumer-portal), so your support team doesn't have to.
+
+## Related
+
+- [Retry schedule](/delivery/retry-schedule)
+- [Endpoint health](/delivery/endpoint-health)
+- [Messages API](/api-reference/messages)

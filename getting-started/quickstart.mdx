@@ -1,0 +1,119 @@
+---
+title: "Quickstart"
+description: "Send your first webhook with Hookline and verify it on your server in about ten minutes."
+icon: "rocket"
+---
+
+import Prerequisites from "/snippets/prerequisites.mdx";
+import VerifySignatureCode from "/snippets/verify-signature-code.mdx";
+import ApiKeyWarning from "/snippets/api-key-warning.mdx";
+
+This guide takes you from an empty workspace to a signed, verified webhook delivery. You create an application, add an endpoint, send a message, and check the signature on the receiving side.
+
+## Prerequisites
+
+<Prerequisites />
+
+<ApiKeyWarning />
+
+## Send your first webhook
+
+<Steps>
+  <Step title="Install an SDK">
+    Install the SDK for your language. You can also call the REST API directly with `curl`.
+
+    <CodeGroup>
+
+    ```bash Node.js
+    npm install @hookline/node
+    ```
+
+    ```bash Python
+    pip install hookline
+    ```
+
+    ```bash Go
+    go get github.com/hookline/hookline-go
+    ```
+
+    </CodeGroup>
+
+    Then export your test key:
+
+    ```bash
+    export HOOKLINE_API_KEY=hl_test_xxxxxxxxxxxxxxxx
+    ```
+  </Step>
+  <Step title="Create an application">
+    An application represents one of your customers. Pass your own customer ID as `uid` so you can look the application up later without storing Hookline IDs.
+
+    ```bash
+    curl https://api.hookline.example/v1/applications \
+      -H "Authorization: Bearer $HOOKLINE_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{ "name": "Acme Corp", "uid": "cus_1931" }'
+    ```
+
+    The response contains the application ID, for example `app_2Lk8sQ`.
+  </Step>
+  <Step title="Add an endpoint">
+    Add the URL that should receive webhooks. In the test environment you can use plain HTTP, which is handy with [`hookline listen`](/cli/local-development).
+
+    ```bash
+    curl https://api.hookline.example/v1/applications/cus_1931/endpoints \
+      -H "Authorization: Bearer $HOOKLINE_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{ "url": "https://example.com/webhooks", "event_types": ["invoice.paid"] }'
+    ```
+
+    Copy the endpoint's signing secret (`whsec_...`) from the dashboard under **Applications** > **Acme Corp** > **Endpoints**, or fetch it with `GET /applications/cus_1931/endpoints/{ep_id}/secret`.
+  </Step>
+  <Step title="Send a message">
+    Create a message. Hookline delivers it to every endpoint in the application that subscribes to `invoice.paid`.
+
+    ```bash
+    curl https://api.hookline.example/v1/applications/cus_1931/messages \
+      -H "Authorization: Bearer $HOOKLINE_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "event_type": "invoice.paid",
+        "event_id": "evt_2bX9",
+        "payload": {
+          "type": "invoice.paid",
+          "id": "evt_2bX9",
+          "created_at": "2026-10-23T09:30:00Z",
+          "data": { "invoice_id": "inv_8842", "customer_id": "cus_1931", "amount": 4900, "currency": "usd" }
+        }
+      }'
+    ```
+  </Step>
+  <Step title="Verify the signature">
+    On the receiving server, verify every request before you trust it. Set `HOOKLINE_WEBHOOK_SECRET` to the endpoint secret you copied.
+
+    <VerifySignatureCode />
+  </Step>
+  <Step title="Check the delivery">
+    Open **Applications** > **Acme Corp** > **Messages** in the dashboard. Select the message to see each attempt with its status code, response body, and duration.
+  </Step>
+</Steps>
+
+<Check>
+  You've sent and verified your first webhook. When you're ready for production, repeat these steps with a `hl_live_` key and an HTTPS endpoint.
+</Check>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Core concepts" icon="diagram-project" href="/getting-started/core-concepts">
+    Learn how applications, endpoints, and messages fit together.
+  </Card>
+  <Card title="Event types" icon="tags" href="/sending/event-types">
+    Define and document the events you send.
+  </Card>
+  <Card title="Retry schedule" icon="arrows-rotate" href="/delivery/retry-schedule">
+    See what happens when an endpoint is down.
+  </Card>
+  <Card title="Consumer portal" icon="window-maximize" href="/features/consumer-portal">
+    Let customers manage their own endpoints.
+  </Card>
+</CardGroup>

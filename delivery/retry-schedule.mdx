@@ -1,0 +1,89 @@
+---
+title: "Retry schedule"
+description: "How Hookline retries failed deliveries, and what happens when every attempt fails."
+icon: "arrows-rotate"
+---
+
+import RetrySchedule from "/snippets/retry-schedule.mdx";
+
+Endpoints go down. Deploys restart servers, certificates expire, and databases fill up. Hookline retries failed deliveries automatically, so a short outage on your customer's side doesn't lose events.
+
+## What counts as a failure
+
+Hookline treats an attempt as successful only when the endpoint returns a `2xx` status code within 15 seconds. Every other outcome is a failure and schedules a retry:
+
+- A `4xx` or `5xx` status code
+- A `3xx` redirect, because Hookline doesn't follow redirects
+- No response within 15 seconds
+- A connection error, DNS failure, or TLS error
+
+The one exception is `410 Gone`, which disables the endpoint immediately instead of retrying. See [Endpoint health](/delivery/endpoint-health).
+
+## The schedule
+
+Each message gets up to 8 attempts per endpoint over about 27.5 hours:
+
+<RetrySchedule />
+
+Retries are independent per endpoint. If a message fans out to three endpoints and one of them is down, only that endpoint's delivery is retried.
+
+## When all attempts fail
+
+After the eighth attempt fails, Hookline:
+
+1. Marks the message as `failed` for that endpoint.
+2. Sends a `message.attempt.exhausted` [operational webhook](/features/operational-webhooks) to you.
+3. Keeps the message and its attempts in the logs for your plan's retention period.
+
+You can then [replay the message](/delivery/replaying-messages) once the endpoint is fixed.
+
+<Tip>
+  Hookline sends a `message.attempt.failing` operational webhook after the fourth failed attempt, about 35 minutes in. Use it to alert your customer before they lose a full day of events.
+</Tip>
+
+## Inspect attempts
+
+Every attempt is recorded with its status, response code, the first 4 KB of the response body, and duration.
+
+<Tabs>
+  <Tab title="Dashboard">
+    Open the application, select the message, and review the **Attempts** table. Click an attempt to see the response body.
+  </Tab>
+  <Tab title="API">
+    ```bash
+    curl https://api.hookline.example/v1/applications/app_31xK/messages/msg_2bX9aQ7rT1/attempts \
+      -H "Authorization: Bearer $HOOKLINE_API_KEY"
+    ```
+
+    ```json Response
+    {
+      "data": [
+        {
+          "id": "atmpt_7LwQ",
+          "endpoint_id": "ep_9QmW",
+          "status": "failed",
+          "response_status_code": 503,
+          "response_body": "Service Unavailable",
+          "duration_ms": 112,
+          "triggered_by": "scheduled",
+          "created_at": "2026-10-23T09:30:05Z"
+        }
+      ],
+      "iterator": null,
+      "done": true
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Guidance for receivers
+
+- Return `2xx` only after you've safely stored the event. If you return `2xx` and then crash, Hookline won't retry.
+- Return `5xx` or `429` for temporary problems you want Hookline to retry.
+- Expect duplicates and [deduplicate by `webhook-id`](/security/replay-protection#deduplicate-by-message-id).
+
+## Related
+
+- [Endpoint health](/delivery/endpoint-health)
+- [Replaying messages](/delivery/replaying-messages)
+- [Timeouts and responses](/delivery/timeouts-and-responses)

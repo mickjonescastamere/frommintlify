@@ -1,0 +1,131 @@
+---
+title: "Python SDK"
+sidebarTitle: "Python"
+description: "Install and use the hookline package to send messages and verify webhooks in Python."
+icon: "python"
+---
+
+import ApiKeyWarning from "/snippets/api-key-warning.mdx";
+
+The Python SDK supports Python 3.9 and later. It includes both a synchronous and an `asyncio` client.
+
+## Install
+
+<CodeGroup>
+
+```bash pip
+pip install hookline
+```
+
+```bash Poetry
+poetry add hookline
+```
+
+```bash uv
+uv add hookline
+```
+
+</CodeGroup>
+
+## Initialize the client
+
+```python
+import os
+from hookline import Hookline
+
+hookline = Hookline(os.environ["HOOKLINE_API_KEY"])
+```
+
+<ApiKeyWarning />
+
+## Send a message
+
+```python
+hookline.applications.create(name="Acme Corp", uid="cus_1931")
+
+message = hookline.messages.create(
+    "cus_1931",
+    event_type="invoice.paid",
+    event_id="evt_2bX9",
+    payload={
+        "type": "invoice.paid",
+        "id": "evt_2bX9",
+        "created_at": "2026-10-23T09:30:00Z",
+        "data": {"invoice_id": "inv_8842", "amount": 4900, "currency": "usd"},
+    },
+)
+print(message.id)  # msg_...
+```
+
+## Use the async client
+
+```python
+from hookline import AsyncHookline
+
+hookline = AsyncHookline(os.environ["HOOKLINE_API_KEY"])
+
+async def notify_paid(invoice):
+    await hookline.messages.create(
+        invoice.customer_id,
+        event_type="invoice.paid",
+        event_id=f"invoice-paid-{invoice.id}",
+        payload={"type": "invoice.paid", "data": {"invoice_id": invoice.id}},
+    )
+```
+
+## Iterate over lists
+
+```python
+for app in hookline.applications.list(limit=100):
+    print(app.uid, app.name)
+```
+
+The iterator fetches the next page automatically when you reach the end of the current one.
+
+## Handle errors
+
+```python
+from hookline import HooklineError
+
+try:
+    hookline.messages.create("cus_unknown", event_type="invoice.paid", payload={})
+except HooklineError as err:
+    print(err.status, err.code, err.request_id)
+```
+
+## Verify incoming webhooks
+
+```python
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from hookline import Webhook, WebhookVerificationError
+
+wh = Webhook(os.environ["HOOKLINE_WEBHOOK_SECRET"])
+
+@csrf_exempt
+def webhooks(request):
+    try:
+        event = wh.verify(request.body, request.headers)
+    except WebhookVerificationError:
+        return HttpResponse(status=400)
+    # handle event["type"]
+    return HttpResponse(status=204)
+```
+
+<Note>
+  Pass the raw bytes of the body (`request.body` in Django, `request.get_data()` in Flask). Don't pass a parsed dictionary.
+</Note>
+
+## Configuration options
+
+| Option        | Default                           | Description                                     |
+| ------------- | --------------------------------- | ----------------------------------------------- |
+| `server_url`  | `https://api.hookline.example/v1` | API base URL. Use the EU URL for EU workspaces. |
+| `max_retries` | `2`                               | Retries for `429` and `5xx` responses.          |
+| `timeout`     | `30.0`                            | Request timeout in seconds.                     |
+
+## Related
+
+- [SDKs overview](/sdks/overview)
+- [Verifying signatures](/security/verifying-signatures)
+- [API reference](/api-reference/introduction)

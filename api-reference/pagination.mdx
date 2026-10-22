@@ -1,0 +1,75 @@
+---
+title: "Pagination"
+description: "Page through Hookline list endpoints with cursor-based iterators."
+icon: "list-ol"
+---
+
+import PaginationParams from "/snippets/pagination-params.mdx";
+
+All list endpoints, such as `GET /applications` and `GET /applications/{app}/messages`, use cursor-based pagination. Results are returned newest first.
+
+## Query parameters
+
+<PaginationParams />
+
+## Response format
+
+```json
+{
+  "data": [
+    { "id": "msg_2bX9", "event_type": "invoice.paid", "created_at": "2026-10-23T09:30:00Z" },
+    { "id": "msg_2bX8", "event_type": "customer.created", "created_at": "2026-10-23T09:29:12Z" }
+  ],
+  "iterator": "msg_2bX8",
+  "done": false
+}
+```
+
+<ResponseField name="data" type="array">
+  The objects on this page.
+</ResponseField>
+
+<ResponseField name="iterator" type="string | null">
+  Pass this value as the `iterator` query parameter to fetch the next page.
+</ResponseField>
+
+<ResponseField name="done" type="boolean">
+  `true` when there are no more pages.
+</ResponseField>
+
+## Fetch every page
+
+Keep requesting pages until `done` is `true`:
+
+<CodeGroup>
+
+```bash cURL
+curl "https://api.hookline.example/v1/applications/app_2Zk8/messages?limit=100" \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY"
+
+curl "https://api.hookline.example/v1/applications/app_2Zk8/messages?limit=100&iterator=msg_2bX8" \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY"
+```
+
+```javascript Node.js
+let iterator;
+do {
+  const page = await hookline.messages.list("app_2Zk8", { limit: 100, iterator });
+  for (const msg of page.data) console.log(msg.id);
+  iterator = page.iterator;
+  if (page.done) break;
+} while (iterator);
+```
+
+</CodeGroup>
+
+<Tip>
+  The Node SDK also supports async iteration: `for await (const msg of hookline.messages.listAll("app_2Zk8"))` fetches pages for you.
+</Tip>
+
+## Notes
+
+- Iterators are opaque. Don't build or modify them yourself.
+- Iterators stay valid for 24 hours.
+- New objects created while you page aren't included in pages you already passed. Start a new listing to see them.
+- Filters such as `event_types` or `before` must be repeated on every page request.

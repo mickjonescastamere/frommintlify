@@ -1,0 +1,72 @@
+---
+title: "Idempotency"
+description: "Retry API requests safely without sending the same webhook twice."
+icon: "fingerprint"
+---
+
+Networks fail. If a request to Hookline times out, you can't tell whether it was processed. Idempotency lets you retry without creating duplicate applications, endpoints, or messages.
+
+Hookline gives you two tools:
+
+| Tool                     | Applies to          | Window   | Use it for                                  |
+| ------------------------ | ------------------- | -------- | ------------------------------------------- |
+| `Idempotency-Key` header | Any `POST` request  | 24 hours | Safely retrying a specific API request.     |
+| `event_id` field         | Messages only       | 24 hours | Deduplicating the same business event.      |
+
+## Idempotency-Key header
+
+Send a unique value, such as a UUID, in the `Idempotency-Key` header. If you send the same key again within 24 hours, Hookline returns the original response instead of running the request again.
+
+```bash
+curl https://api.hookline.example/v1/applications \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: 6f1c2a52-3b5e-4c1e-9a07-6c3f0e9b8d21" \
+  -d '{ "name": "Acme Corp", "uid": "cus_1931" }'
+```
+
+If you reuse a key with a different request body, Hookline returns `409` with the error code `idempotency_conflict`:
+
+```json
+{
+  "error": {
+    "type": "conflict_error",
+    "code": "idempotency_conflict",
+    "message": "This Idempotency-Key was already used with a different request body.",
+    "request_id": "req_4Gm1Zt8a"
+  }
+}
+```
+
+<Tip>
+  The official SDKs generate an `Idempotency-Key` automatically for every `POST` and reuse it when they retry. You only need to set one yourself if you retry at a higher level.
+</Tip>
+
+## event_id on messages
+
+`event_id` deduplicates by business meaning rather than by request. Use the ID of the thing that happened, such as your own event or outbox row ID. If two messages for the same application share an `event_id` within 24 hours, Hookline accepts the second request but doesn't deliver it again.
+
+```json
+{
+  "event_type": "invoice.paid",
+  "event_id": "evt_2bX9",
+  "payload": { "...": "..." }
+}
+```
+
+This protects you even when two different processes try to send the same event, which an `Idempotency-Key` alone can't do unless they share the key.
+
+## Choose a good key
+
+- **Do** derive keys from stable data, such as `invoice-paid-inv_8842`.
+- **Do** generate a new UUID per logical operation and persist it before the first attempt.
+- **Don't** use timestamps or random values generated on each retry.
+
+## Deduplicate on the receiving side
+
+Hookline delivers at least once. A retry can arrive after a slow `2xx` that timed out on Hookline's side. Tell your consumers to deduplicate on the `webhook-id` header, which stays the same across every attempt of a message.
+
+## Related
+
+- [Messages](/sending/messages)
+- [Errors](/api-reference/errors)

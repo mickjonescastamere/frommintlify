@@ -1,0 +1,94 @@
+---
+title: "Portal access"
+description: "Create short-lived links that sign your customers in to the Hookline consumer portal."
+icon: "window-maximize"
+---
+
+The consumer portal lets your customers manage their own endpoints, browse delivery logs, and replay messages. To open the portal for a customer, create a portal access link on your server and pass it to your frontend.
+
+## Create portal access
+
+`POST /applications/{app}/portal-access`
+
+<ParamField path="app" type="string" required>
+  Application `id` or `uid` of the customer.
+</ParamField>
+<ParamField body="expiry" type="integer" default="604800">
+  Lifetime of the link in seconds. The default is 7 days. The maximum is 30 days.
+</ParamField>
+<ParamField body="read_only" type="boolean" default="false">
+  When `true`, the customer can view endpoints and logs but can't change anything.
+</ParamField>
+<ParamField body="feature_flags" type="string[]">
+  Feature flags that reveal gated event types to this customer.
+</ParamField>
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.hookline.example/v1/applications/acme/portal-access \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"expiry": 3600}'
+```
+
+```javascript Node.js
+const access = await hookline.portalAccess.create("acme", { expiry: 3600 });
+// Send access.url to your frontend
+```
+
+</CodeGroup>
+
+## Response
+
+<ResponseField name="url" type="string">
+  A magic link that opens the portal already signed in. Use it as the iframe `src` or pass it to the React component.
+</ResponseField>
+<ResponseField name="token" type="string">
+  The bearer token inside the link, for custom integrations.
+</ResponseField>
+<ResponseField name="expires_at" type="string">
+  ISO 8601 time when the link stops working.
+</ResponseField>
+
+```json Response
+{
+  "url": "https://app.hookline.example/portal/login#key=eyJhcHAiOiJhcHBfMlprOCJ9...",
+  "token": "hlp_eyJhcHAiOiJhcHBfMlprOCJ9...",
+  "expires_at": "2026-10-23T10:30:00Z"
+}
+```
+
+## Embed the portal
+
+<Tabs>
+  <Tab title="React">
+    ```jsx
+    import { HooklinePortal } from "@hookline/react";
+
+    export function WebhookSettings({ portalUrl }) {
+      return <HooklinePortal url={portalUrl} style={{ height: 720 }} />;
+    }
+    ```
+  </Tab>
+  <Tab title="iframe">
+    ```html
+    <iframe
+      src="https://app.hookline.example/portal/login#key=..."
+      style="width: 100%; height: 720px; border: none"
+      allow="clipboard-write"
+    ></iframe>
+    ```
+  </Tab>
+</Tabs>
+
+## Security notes
+
+- Create portal links on your server only, after you've authenticated your own user. A link grants access to that application's endpoints and logs.
+- Create a fresh link each time the customer opens the page, and keep `expiry` short, such as one hour.
+- Each link is scoped to a single application and environment.
+
+## Related
+
+- [Consumer portal](/features/consumer-portal)
+- [Applications API](/api-reference/applications)

@@ -1,0 +1,58 @@
+---
+title: "Changelog"
+description: "New features, improvements, and fixes in Hookline."
+icon: "clock-rotate-left"
+---
+
+<Update label="October 2026" description="v1.9">
+  ## Audit log API
+
+  You can now read the [audit log](/features/audit-log) with `GET /v1/audit-log` and stream entries into your SIEM. The endpoint uses standard cursor [pagination](/api-reference/pagination).
+
+  ## Improvements
+
+  - The message log now shows the first 4 KB of response bodies, up from 1 KB.
+  - `hookline listen` reconnects automatically after network interruptions.
+</Update>
+
+<Update label="August 2026" description="v1.8">
+  ## Go SDK 1.0
+
+  The [Go SDK](/sdks/go) is now generally available. It supports every API endpoint and includes webhook verification.
+
+  ## Fixes
+
+  - Fixed an issue where endpoint filters with more than 100 event types were truncated in the consumer portal.
+  - The `Retry-After` header now uses whole seconds in every region.
+</Update>
+
+<Update label="June 2026" description="v1.7">
+  ## Custom domains for the consumer portal
+
+  Enterprise workspaces can serve the [consumer portal](/features/consumer-portal) from their own domain, such as `webhooks.yourcompany.com`.
+
+  ## Failing-endpoint warnings
+
+  A new [operational webhook](/features/operational-webhooks), `message.attempt.failing`, fires after the 4th failed attempt. Use it to warn customers before their endpoint is disabled.
+</Update>
+
+<Update label="April 2026" description="v1.6">
+  ## Transformations are generally available
+
+  [Transformations](/features/transformations) are out of beta on Pro and Enterprise plans. The CPU limit increased from 500 ms to 1 second.
+
+  ## EU region
+
+  You can now create workspaces in the `eu` region. All message data stays in the EU. See [Workspaces](/account/workspaces).
+</Update>
+
+<Update label="February 2026" description="v1.5">
+  ## Channels
+
+  Tag messages and endpoints with [channels](/sending/channels) to route events by project, team, or any other key.
+
+  ## Improvements
+
+  - Applications can now be looked up by `uid` in every endpoint path.
+  - The [Python SDK](/sdks/python) now supports `asyncio` with `AsyncHookline`.
+</Update>

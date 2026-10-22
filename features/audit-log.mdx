@@ -1,0 +1,68 @@
+---
+title: "Audit log"
+description: "See who changed what in your workspace, and export the history for compliance reviews."
+icon: "clipboard-list"
+---
+
+import PlanAvailability from "/snippets/plan-availability.mdx";
+
+<PlanAvailability plan="Enterprise" />
+
+The audit log records every administrative action in your workspace. Use it to investigate unexpected changes and to provide evidence for security reviews such as SOC 2.
+
+## What is recorded
+
+| Category    | Example actions                                                   |
+| ----------- | ----------------------------------------------------------------- |
+| Members     | Member invited, role changed, member removed, SSO login.          |
+| API keys    | Key created, key rolled, key deleted.                             |
+| Endpoints   | Endpoint created, URL changed, secret revealed, secret rotated.   |
+| Event types | Event type created, schema changed, event type archived.          |
+| Settings    | Portal branding changed, SSO configured, retention changed.       |
+| Data access | Message payload viewed, bulk recovery started.                    |
+
+Each entry includes the actor (a member or an API key), the action, the target object, the source IP address, and a timestamp. Hookline keeps entries for 1 year.
+
+## View the audit log
+
+Go to **Settings** > **Audit log**. Filter by actor, action, or date range. Click an entry to see the full before and after values.
+
+## Export entries
+
+Click **Export CSV** to download the entries that match your current filters. An export includes up to 100,000 rows.
+
+To stream entries into a SIEM, use the API instead:
+
+```bash
+curl "https://api.hookline.example/v1/audit-log?limit=100" \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY"
+```
+
+```json
+{
+  "data": [
+    {
+      "id": "aud_4Rt7",
+      "action": "endpoint.secret.rotated",
+      "actor": { "type": "member", "email": "dana@yourcompany.example" },
+      "target": { "type": "endpoint", "id": "ep_7Qm3" },
+      "ip_address": "203.0.113.24",
+      "created_at": "2026-10-22T15:04:11Z"
+    }
+  ],
+  "iterator": "aud_4Rt7",
+  "done": false
+}
+```
+
+The endpoint uses standard [pagination](/api-reference/pagination). It needs an API key with the `full` or `read_only` scope.
+
+<Note>
+  The audit log is read-only. Nobody can edit or delete entries, including workspace owners.
+</Note>
+
+## Related
+
+- [Roles and permissions](/security/roles-and-permissions)
+- [Single sign-on](/account/sso)
+- [API keys](/security/api-keys)

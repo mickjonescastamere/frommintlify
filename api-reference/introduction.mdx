@@ -1,0 +1,83 @@
+---
+title: "API introduction"
+sidebarTitle: "Introduction"
+description: "Base URLs, request format, and conventions shared by every Hookline API endpoint."
+icon: "book"
+---
+
+import { apiBase, apiBaseEu } from "/snippets/constants.mdx";
+
+The Hookline API is a REST API. It accepts and returns JSON, uses standard HTTP status codes, and authenticates with bearer API keys.
+
+## Base URLs
+
+Use the base URL for the region your workspace was created in:
+
+| Region | Base URL |
+| ------ | -------- |
+| US | {apiBase} |
+| EU | {apiBaseEu} |
+
+The region is fixed when you create a workspace. Requests sent to the wrong region return `401 authentication_error`.
+
+## Your first request
+
+```bash
+curl https://api.hookline.example/v1/applications \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY"
+```
+
+```json Response
+{
+  "data": [
+    {
+      "id": "app_2Zk8",
+      "name": "Acme Corp",
+      "uid": "acme",
+      "metadata": {},
+      "rate_limit": null,
+      "created_at": "2026-10-01T12:00:00Z",
+      "updated_at": "2026-10-01T12:00:00Z"
+    }
+  ],
+  "iterator": null,
+  "done": true
+}
+```
+
+## Conventions
+
+- **JSON bodies.** Send `Content-Type: application/json` on requests with a body.
+- **Timestamps.** All timestamps are ISO 8601 strings in UTC, for example `2026-10-23T09:30:00Z`.
+- **IDs.** Objects have prefixed IDs: `app_`, `ep_`, `msg_`, `atmpt_`. Event types are identified by name.
+- **Your own IDs.** Anywhere an application ID is accepted, you can pass the application's `uid` instead.
+- **Idempotency.** Send an `Idempotency-Key` header on `POST` requests so you can retry safely. Keys are kept for 24 hours.
+- **Environments.** The API key decides the environment. A `hl_test_` key only sees test data.
+
+## Resources
+
+<CardGroup cols={2}>
+  <Card title="Applications" icon="building" href="/api-reference/applications">
+    One application per customer who receives webhooks.
+  </Card>
+  <Card title="Endpoints" icon="link" href="/api-reference/endpoints">
+    The URLs that receive deliveries.
+  </Card>
+  <Card title="Messages" icon="envelope" href="/api-reference/messages">
+    Send events and inspect delivery attempts.
+  </Card>
+  <Card title="Event types" icon="tags" href="/api-reference/event-types">
+    The catalog of events you send.
+  </Card>
+  <Card title="Portal access" icon="window-maximize" href="/api-reference/portal-access">
+    Create consumer portal links.
+  </Card>
+</CardGroup>
+
+## Before you build
+
+- [Authentication](/api-reference/authentication)
+- [Errors](/api-reference/errors)
+- [Pagination](/api-reference/pagination)
+- [Rate limits](/api-reference/rate-limits)
+- [SDKs](/sdks/overview), which handle retries and pagination for you

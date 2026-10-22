@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Mintlify Starter Kit",
+  "name": "Hookline",
   "colors": {
     "primary": "#16A34A",
     "light": "#07C983",
@@ -9,26 +9,169 @@
   },
   "favicon": "/favicon.svg",
   "navigation": {
-    "pages": [
+    "tabs": [
       {
-        "group": "Getting Started",
-        "pages": [
-          "index",
-          "quickstart"
+        "tab": "Documentation",
+        "icon": "book-open",
+        "groups": [
+          {
+            "group": "Get started",
+            "icon": "rocket",
+            "pages": [
+              "index",
+              "getting-started/quickstart",
+              "getting-started/core-concepts",
+              "getting-started/environments",
+              "getting-started/glossary"
+            ]
+          },
+          {
+            "group": "Sending webhooks",
+            "icon": "paper-plane",
+            "pages": [
+              "sending/applications",
+              "sending/event-types",
+              "sending/messages",
+              "sending/idempotency",
+              "sending/event-catalog",
+              "sending/channels",
+              "sending/payload-best-practices"
+            ]
+          },
+          {
+            "group": "Security",
+            "icon": "shield-halved",
+            "pages": [
+              "security/verifying-signatures",
+              "security/secret-rotation",
+              "security/replay-protection",
+              "security/static-ips",
+              "security/api-keys",
+              "security/roles-and-permissions"
+            ]
+          },
+          {
+            "group": "Delivery and reliability",
+            "icon": "arrows-rotate",
+            "pages": [
+              "delivery/retry-schedule",
+              "delivery/endpoint-health",
+              "delivery/replaying-messages",
+              "delivery/endpoint-rate-limits",
+              "delivery/ordering",
+              "delivery/timeouts-and-responses"
+            ]
+          },
+          {
+            "group": "Advanced features",
+            "icon": "wand-magic-sparkles",
+            "pages": [
+              "features/transformations",
+              "features/consumer-portal",
+              "features/operational-webhooks",
+              "features/custom-headers",
+              "features/audit-log"
+            ]
+          },
+          {
+            "group": "Account and workspace",
+            "icon": "building",
+            "pages": [
+              "account/workspaces",
+              "account/team-members",
+              "account/sso",
+              "account/billing-and-usage"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "SDKs and CLI",
+        "icon": "code",
+        "groups": [
+          {
+            "group": "SDKs",
+            "icon": "cube",
+            "pages": [
+              "sdks/overview",
+              "sdks/node",
+              "sdks/python",
+              "sdks/go"
+            ]
+          },
+          {
+            "group": "CLI",
+            "icon": "terminal",
+            "pages": [
+              "cli/install-and-login",
+              "cli/local-development",
+              "cli/command-reference"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API reference",
+        "icon": "square-terminal",
+        "groups": [
+          {
+            "group": "Overview",
+            "icon": "circle-info",
+            "pages": [
+              "api-reference/introduction",
+              "api-reference/authentication",
+              "api-reference/errors",
+              "api-reference/pagination",
+              "api-reference/rate-limits"
+            ]
+          },
+          {
+            "group": "Resources",
+            "icon": "brackets-curly",
+            "pages": [
+              "api-reference/applications",
+              "api-reference/endpoints",
+              "api-reference/messages",
+              "api-reference/event-types",
+              "api-reference/portal-access"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Resources",
+        "icon": "life-ring",
+        "groups": [
+          {
+            "group": "Help",
+            "icon": "circle-question",
+            "pages": [
+              "resources/troubleshooting",
+              "resources/faq",
+              "resources/migrating-from-in-house"
+            ]
+          },
+          {
+            "group": "Updates",
+            "icon": "clock-rotate-left",
+            "pages": [
+              "resources/changelog"
+            ]
+          }
         ]
       }
     ],
     "global": {
       "anchors": [
         {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
+          "anchor": "Status",
+          "href": "https://status.hookline.example",
+          "icon": "signal"
         },
         {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
+          "anchor": "Dashboard",
+          "href": "https://app.hookline.example",
+          "icon": "gauge"
         }
       ]
     }
@@ -41,13 +184,13 @@
     "links": [
       {
         "label": "Support",
-        "href": "mailto:support@mintlify.com"
+        "href": "mailto:support@hookline.example"
       }
     ],
     "primary": {
       "type": "button",
       "label": "Dashboard",
-      "href": "https://app.mintlify.com"
+      "href": "https://app.hookline.example"
     }
   },
   "contextual": {
@@ -64,9 +207,8 @@
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "github": "https://github.com/mickjonescastamere/frommintlify"
     }
-  }
+  },
+  "description": "Reliable webhook delivery for your product: send events once, Hookline signs, retries, and logs every delivery."
 }

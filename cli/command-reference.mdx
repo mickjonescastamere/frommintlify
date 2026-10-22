@@ -1,0 +1,110 @@
+---
+title: "Command reference"
+description: "Every Hookline CLI command, with its flags and examples."
+icon: "list"
+---
+
+All commands accept the global flags below. Run `hookline <command> --help` for the same information in your terminal.
+
+## Global flags
+
+| Flag | Description |
+| ---- | ----------- |
+| `--env` | Environment to use: `test` (default) or `live`. |
+| `--workspace` | Workspace ID to use when you belong to several workspaces. |
+| `--json` | Print machine-readable JSON instead of tables. |
+| `--help` | Show help for a command. |
+
+## Authentication
+
+### `hookline login`
+
+Opens a browser to authorize the CLI and stores a token in `~/.config/hookline/config.toml`.
+
+### `hookline logout`
+
+Revokes the CLI token and removes it from the config file.
+
+## Local development
+
+### `hookline listen`
+
+Forwards deliveries to a local URL through a temporary relay endpoint.
+
+```bash
+hookline listen http://localhost:3000/webhooks --app app_2Zk8 --event-types invoice.paid
+```
+
+See [Local development](/cli/local-development) for details.
+
+## Messages
+
+### `hookline messages send`
+
+Creates a message in an application.
+
+```bash
+hookline messages send \
+  --app app_2Zk8 \
+  --event-type invoice.paid \
+  --payload @event.json
+```
+
+| Flag | Description |
+| ---- | ----------- |
+| `--app` | Application ID or `uid`. Required. |
+| `--event-type` | Event type name. Required. |
+| `--payload` | Inline JSON, or `@path` to read JSON from a file. Required. |
+| `--channels` | Comma-separated channels. |
+| `--event-id` | Your own idempotency ID for the message. |
+
+### `hookline messages list`
+
+Lists recent messages for an application.
+
+```bash
+hookline messages list --app app_2Zk8 --limit 20
+```
+
+## Endpoints
+
+### `hookline endpoints list`
+
+```bash
+hookline endpoints list --app app_2Zk8
+```
+
+Prints each endpoint's ID, URL, subscribed event types, and whether it's disabled.
+
+## Event types
+
+### `hookline event-types list`
+
+```bash
+hookline event-types list
+```
+
+Add `--include-archived` to show archived event types.
+
+## Exit codes
+
+| Code | Meaning |
+| ---- | ------- |
+| `0` | Success. |
+| `1` | The API returned an error. The error code and `request_id` are printed. |
+| `2` | Invalid flags or arguments. |
+| `3` | Not authenticated. Run `hookline login` or set `HOOKLINE_API_KEY`. |
+
+## Scripting example
+
+Combine `--json` with a tool such as `jq` to use the CLI in scripts:
+
+```bash
+hookline endpoints list --app app_2Zk8 --json \
+  | jq -r '.data[] | select(.disabled) | .url'
+```
+
+## Related
+
+- [Install and log in](/cli/install-and-login)
+- [API reference](/api-reference/introduction)

@@ -1,0 +1,86 @@
+---
+title: "Local development"
+description: "Receive real Hookline webhooks on your laptop with hookline listen, without exposing a public URL."
+icon: "laptop-code"
+---
+
+Webhook endpoints must be reachable over the internet, which makes local testing awkward. The `hookline listen` command solves this. It creates a temporary relay endpoint and forwards every delivery to a URL on your machine.
+
+## How it works
+
+1. The CLI registers a relay URL such as `https://relay.hookline.example/r/3f9c1a`.
+2. Hookline delivers messages to the relay URL like any other endpoint.
+3. The CLI receives each delivery and replays it, headers and body unchanged, to your local URL.
+4. Your local server's response is sent back to Hookline, so attempts show up in the dashboard with real status codes.
+
+Because headers pass through untouched, signature verification works locally exactly as in production.
+
+## Forward webhooks to localhost
+
+<Steps>
+  <Step title="Start your server">
+    Run your app so it listens for `POST` requests, for example on `http://localhost:3000/webhooks`.
+  </Step>
+  <Step title="Start the relay">
+    ```bash
+    hookline listen http://localhost:3000/webhooks
+    ```
+
+    The CLI prints the relay URL and the signing secret for this session:
+
+    ```text
+    Relay URL:   https://relay.hookline.example/r/3f9c1a
+    Secret:      whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw
+    Forwarding:  http://localhost:3000/webhooks
+    ```
+  </Step>
+  <Step title="Add the relay as an endpoint">
+    In the dashboard, open a test application and add the relay URL as an endpoint. You can also pass `--app` to create the endpoint automatically:
+
+    ```bash
+    hookline listen http://localhost:3000/webhooks --app app_2Zk8
+    ```
+  </Step>
+  <Step title="Send a test message">
+    In a second terminal, send a message:
+
+    ```bash
+    hookline messages send --app app_2Zk8 --event-type invoice.paid --payload @event.json
+    ```
+
+    The listening terminal logs each forwarded request with its response code.
+  </Step>
+</Steps>
+
+<Note>
+  Use the secret printed by `hookline listen`, not a production secret, when you verify signatures locally. Set it as `HOOKLINE_WEBHOOK_SECRET` in your local environment.
+</Note>
+
+## Useful flags
+
+| Flag | Description |
+| ---- | ----------- |
+| `--app` | Create the relay endpoint in this application automatically. |
+| `--event-types` | Comma-separated list of event types to subscribe to, for example `invoice.paid,invoice.payment_failed`. |
+| `--print-body` | Print each request body in the terminal. |
+| `--env` | `test` (default) or `live`. Relays in live are allowed but discouraged. |
+
+## Lifetime of a relay
+
+The relay endpoint lives as long as the `listen` command runs. When you stop the command with **Ctrl+C**, the CLI deletes the endpoint it created. If the CLI exits unexpectedly, the endpoint is disabled automatically after 24 hours without a connected listener.
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Deliveries fail with connection refused">
+    Your local server isn't running or listens on a different port. Check the forwarding URL printed by the CLI.
+  </Accordion>
+  <Accordion title="Signature verification fails locally">
+    Make sure you read the raw request body and use the secret printed by `hookline listen`. See [Verifying signatures](/security/verifying-signatures).
+  </Accordion>
+</AccordionGroup>
+
+## Related
+
+- [Command reference](/cli/command-reference)
+- [Troubleshooting](/resources/troubleshooting)

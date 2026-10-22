@@ -1,0 +1,75 @@
+---
+title: "Frequently asked questions"
+sidebarTitle: "FAQ"
+description: "Quick answers about delivery guarantees, limits, security, and billing."
+icon: "circle-question"
+---
+
+import GetHelp from "/snippets/get-help.mdx";
+
+## Delivery
+
+<AccordionGroup>
+  <Accordion title="Does Hookline guarantee delivery?">
+    Hookline guarantees at-least-once delivery attempts. It retries each failed delivery up to 8 times over about 27 hours. A receiver may get the same message more than once, so deduplicate on the `webhook-id` header. See [Retry schedule](/delivery/retry-schedule).
+  </Accordion>
+  <Accordion title="Are messages delivered in order?">
+    Not strictly. Delivery is best-effort ordered. Retries can cause a newer message to arrive before an older one. Include a timestamp or version number in your payload so receivers can ignore stale updates. See [Ordering](/delivery/ordering).
+  </Accordion>
+  <Accordion title="How long does Hookline wait for a response?">
+    15 seconds. Any `2xx` response within that time counts as success. Everything else, including redirects, counts as a failure.
+  </Accordion>
+  <Accordion title="Can I send to HTTP URLs?">
+    Only in the test environment. Live endpoints must use HTTPS.
+  </Accordion>
+  <Accordion title="What is the maximum payload size?">
+    1 MB of JSON per message. For larger data, send an ID and let the receiver fetch the details from your API. See [Payload best practices](/sending/payload-best-practices).
+  </Accordion>
+</AccordionGroup>
+
+## Security
+
+<AccordionGroup>
+  <Accordion title="How do receivers know a request came from Hookline?">
+    Every delivery is signed with HMAC-SHA256 using the endpoint's secret. Receivers verify the `webhook-signature` header. See [Verifying signatures](/security/verifying-signatures).
+  </Accordion>
+  <Accordion title="Which IP addresses do deliveries come from?">
+    A fixed set of addresses per region. See [Static IPs](/security/static-ips).
+  </Accordion>
+  <Accordion title="Can I see message payloads in the dashboard?">
+    Yes. Members with the Developer role and above can view payloads. On Enterprise, every payload view is recorded in the [audit log](/features/audit-log).
+  </Accordion>
+</AccordionGroup>
+
+## Account and billing
+
+<AccordionGroup>
+  <Accordion title="Do retries count toward my quota?">
+    No. Hookline counts one message per API call, no matter how many endpoints or attempts it takes. See [Billing and usage](/account/billing-and-usage).
+  </Accordion>
+  <Accordion title="Do test environment messages cost anything?">
+    No. Only the live environment counts toward usage.
+  </Accordion>
+  <Accordion title="Can I move my workspace to another region?">
+    No. Choose the region when you create the workspace. To move, create a new workspace in the other region and migrate your data. See [Workspaces](/account/workspaces).
+  </Accordion>
+  <Accordion title="How long are messages kept?">
+    30 days on Free, 90 days on Pro, and up to 1 year on Enterprise.
+  </Accordion>
+</AccordionGroup>
+
+## Integration
+
+<AccordionGroup>
+  <Accordion title="Should I create one application per customer?">
+    Yes. An application represents one customer, or one tenant, that receives webhooks. Set `uid` to your own customer ID so you don't have to store Hookline IDs. See [Applications](/sending/applications).
+  </Accordion>
+  <Accordion title="Which languages have official SDKs?">
+    Node.js, Python, and Go. Any language can call the REST API directly. See [SDKs overview](/sdks/overview).
+  </Accordion>
+  <Accordion title="Can my customers manage their own endpoints?">
+    Yes. Embed the [consumer portal](/features/consumer-portal) in your product.
+  </Accordion>
+</AccordionGroup>
+
+<GetHelp />

@@ -1,0 +1,95 @@
+---
+title: "Timeouts and responses"
+description: "How Hookline interprets your endpoint's response, and how to respond quickly and correctly."
+icon: "stopwatch"
+---
+
+Every delivery is an HTTPS `POST` request with a JSON body. How the endpoint responds decides whether Hookline marks the attempt as successful or schedules a retry.
+
+## The request
+
+```http
+POST /webhooks HTTP/1.1
+Host: api.acme.example
+Content-Type: application/json
+User-Agent: Hookline-Webhooks/1.0
+webhook-id: msg_2bX9aQ7rT1
+webhook-timestamp: 1792748400
+webhook-signature: v1,K5oZfzN95Z9UVu1EsfQmfVNQhnkZ2pj9o9NDN/H/pI4=
+
+{"type":"invoice.paid","id":"evt_2bX9","created_at":"2026-10-23T09:30:00Z","data":{"invoice_id":"inv_8842","customer_id":"cus_1931","amount":4900,"currency":"usd"}}
+```
+
+The endpoint can also receive [custom headers](/features/custom-headers) that you configure.
+
+## How Hookline reads the response
+
+| Response                          | Result   | What happens next                                      |
+| --------------------------------- | -------- | ------------------------------------------------------ |
+| `200`–`299`                       | Success  | Delivery complete                                      |
+| `300`–`399`                       | Failure  | Redirects aren't followed; retried on schedule         |
+| `400`–`499`, except `410`         | Failure  | Retried on schedule                                    |
+| `410 Gone`                        | Failure  | Endpoint disabled immediately, no more retries         |
+| `500`–`599`                       | Failure  | Retried on schedule                                    |
+| No response within 15 seconds     | Failure  | Retried on schedule                                    |
+| Connection, DNS, or TLS error     | Failure  | Retried on schedule                                    |
+
+Hookline ignores the response body when it decides the outcome. It stores the first 4 KB of the body with the attempt, so you can read error messages in the logs.
+
+## The 15-second timeout
+
+Hookline waits up to **15 seconds** for the response headers. If the endpoint hasn't responded by then, Hookline closes the connection and records a timeout.
+
+<Warning>
+  A timeout doesn't mean the receiver didn't process the event. It might have finished processing after Hookline gave up. Hookline then retries, and the receiver gets a duplicate. Always [deduplicate by `webhook-id`](/security/replay-protection#deduplicate-by-message-id).
+</Warning>
+
+## Respond fast, process later
+
+The most reliable receivers do as little as possible before they respond:
+
+<Steps>
+  <Step title="Verify the signature">
+    Reject invalid requests with `400`. See [Verifying signatures](/security/verifying-signatures).
+  </Step>
+  <Step title="Store or enqueue the event">
+    Write the raw event to a durable queue or database table.
+  </Step>
+  <Step title="Return 2xx">
+    Respond with `200` or `204` right away.
+  </Step>
+  <Step title="Process asynchronously">
+    A background worker handles the event, with its own retries for business logic errors.
+  </Step>
+</Steps>
+
+```javascript
+app.post("/webhooks", express.raw({ type: "application/json" }), async (req, res) => {
+  let event;
+  try {
+    event = wh.verify(req.body, req.headers);
+  } catch {
+    return res.sendStatus(400);
+  }
+
+  await queue.publish("hookline-events", {
+    id: req.headers["webhook-id"],
+    event,
+  });
+
+  res.sendStatus(204);
+});
+```
+
+## Choosing status codes as a receiver
+
+- Return `2xx` once the event is stored, even if you don't use that event type.
+- Return `5xx` or `429` for temporary problems, so Hookline retries.
+- Return `410` only when the endpoint is permanently retired.
+- Avoid returning `4xx` for bugs in your processing code. Fix the bug, then let retries or a [recover](/delivery/replaying-messages) deliver the events.
+
+## Related
+
+- [Retry schedule](/delivery/retry-schedule)
+- [Endpoint health](/delivery/endpoint-health)
+- [Troubleshooting](/resources/troubleshooting)

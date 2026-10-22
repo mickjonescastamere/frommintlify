@@ -1,0 +1,68 @@
+<CodeGroup>
+
+```javascript Node.js
+import express from "express";
+import { Webhook, WebhookVerificationError } from "@hookline/node";
+
+const app = express();
+const wh = new Webhook(process.env.HOOKLINE_WEBHOOK_SECRET); // whsec_...
+
+// Use the raw body: re-serialized JSON breaks the signature.
+app.post("/webhooks", express.raw({ type: "application/json" }), (req, res) => {
+  try {
+    const event = wh.verify(req.body, req.headers);
+    // handle event.type ...
+    res.sendStatus(204);
+  } catch (err) {
+    if (err instanceof WebhookVerificationError) return res.sendStatus(400);
+    throw err;
+  }
+});
+```
+
+```python Python
+import os
+from flask import Flask, request
+from hookline import Webhook, WebhookVerificationError
+
+app = Flask(__name__)
+wh = Webhook(os.environ["HOOKLINE_WEBHOOK_SECRET"])  # whsec_...
+
+@app.post("/webhooks")
+def webhooks():
+    try:
+        event = wh.verify(request.get_data(), request.headers)
+    except WebhookVerificationError:
+        return "", 400
+    # handle event["type"] ...
+    return "", 204
+```
+
+```go Go
+package main
+
+import (
+	"io"
+	"net/http"
+	"os"
+
+	hookline "github.com/hookline/hookline-go"
+)
+
+func main() {
+	wh, _ := hookline.NewWebhook(os.Getenv("HOOKLINE_WEBHOOK_SECRET")) // whsec_...
+
+	http.HandleFunc("/webhooks", func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		if err := wh.Verify(body, r.Header); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		// handle the event ...
+		w.WriteHeader(http.StatusNoContent)
+	})
+	http.ListenAndServe(":3000", nil)
+}
+```
+
+</CodeGroup>

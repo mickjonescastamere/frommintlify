@@ -1,0 +1,61 @@
+---
+title: "Glossary"
+description: "Definitions of the terms used throughout the Hookline documentation."
+icon: "book"
+---
+
+Use this glossary when a term in the docs or the dashboard isn't clear.
+
+<AccordionGroup>
+  <Accordion title="Application">
+    An object that represents one of your customers. Messages are always sent to an application. IDs start with `app_`. See [Applications](/sending/applications).
+  </Accordion>
+  <Accordion title="Attempt">
+    One HTTP delivery of a message to one endpoint. IDs start with `atmpt_`.
+  </Accordion>
+  <Accordion title="Channel">
+    A free-form tag on messages and endpoints used for routing beyond event types. See [Channels](/sending/channels).
+  </Accordion>
+  <Accordion title="Consumer">
+    The person or system that receives your webhooks, usually one of your customers.
+  </Accordion>
+  <Accordion title="Consumer portal">
+    An embeddable UI where consumers manage endpoints and view logs. See [Consumer portal](/features/consumer-portal).
+  </Accordion>
+  <Accordion title="Endpoint">
+    A URL inside an application that receives webhooks. IDs start with `ep_`.
+  </Accordion>
+  <Accordion title="Environment">
+    The isolated `test` or `live` space inside a workspace. See [Environments](/getting-started/environments).
+  </Accordion>
+  <Accordion title="Event ID">
+    An optional ID you set on a message as `event_id`. Hookline ignores duplicates of the same event ID for 24 hours.
+  </Accordion>
+  <Accordion title="Event type">
+    The name of a kind of event, such as `invoice.paid`. See [Event types](/sending/event-types).
+  </Accordion>
+  <Accordion title="Idempotency key">
+    A value in the `Idempotency-Key` header that makes a POST request safe to retry. See [Idempotency](/sending/idempotency).
+  </Accordion>
+  <Accordion title="Message">
+    One event sent to one application. IDs start with `msg_`.
+  </Accordion>
+  <Accordion title="Operational webhook">
+    A webhook Hookline sends to you about your own account, such as `endpoint.disabled`. See [Operational webhooks](/features/operational-webhooks).
+  </Accordion>
+  <Accordion title="Recover">
+    Resending every failed message for an endpoint since a point in time. See [Replaying messages](/delivery/replaying-messages).
+  </Accordion>
+  <Accordion title="Signing secret">
+    The per-endpoint key, starting with `whsec_`, used to sign deliveries. See [Verifying signatures](/security/verifying-signatures).
+  </Accordion>
+  <Accordion title="Transformation">
+    A JavaScript function that modifies a webhook before delivery. See [Transformations](/features/transformations).
+  </Accordion>
+  <Accordion title="UID">
+    Your own identifier for an application. You can use it anywhere the API expects an application ID.
+  </Accordion>
+  <Accordion title="Workspace">
+    The top-level container for your team, settings, and billing. IDs start with `ws_`. See [Workspaces](/account/workspaces).
+  </Accordion>
+</AccordionGroup>

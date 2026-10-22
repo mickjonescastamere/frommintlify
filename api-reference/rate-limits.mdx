@@ -1,0 +1,82 @@
+---
+title: "Rate limits"
+description: "Request limits for the Hookline API, the headers that report them, and how to back off."
+icon: "gauge-high"
+---
+
+Hookline limits how many API requests each workspace can make so that one integration can't degrade service for others.
+
+## Limits
+
+| Environment | Limit |
+| ----------- | ----- |
+| Live | 100 requests per second per workspace |
+| Test | 25 requests per second per workspace |
+| Message creation (Pro and above) | 1,000 messages per second, in addition to the request limit |
+
+Enterprise workspaces can request higher limits from support.
+
+<Note>
+  These limits apply to calls you make to the Hookline API. To limit how fast Hookline delivers to your customers' endpoints, see [Endpoint rate limits](/delivery/endpoint-rate-limits).
+</Note>
+
+## Rate limit headers
+
+Every response includes these headers:
+
+| Header | Description |
+| ------ | ----------- |
+| `X-RateLimit-Limit` | The number of requests allowed per second. |
+| `X-RateLimit-Remaining` | Requests left in the current window. |
+| `X-RateLimit-Reset` | Unix time, in seconds, when the window resets. |
+
+When you exceed the limit, Hookline responds with `429` and a `Retry-After` header:
+
+```http
+HTTP/2 429
+Retry-After: 1
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1792748400
+```
+
+```json
+{
+  "error": {
+    "type": "rate_limit_error",
+    "code": "rate_limit_exceeded",
+    "message": "Too many requests. Retry after 1 second.",
+    "request_id": "req_3LmQ8xY2"
+  }
+}
+```
+
+## Handle 429 responses
+
+- Wait for the number of seconds in `Retry-After`, then retry.
+- Add jitter so many workers don't retry at the same moment.
+- Use an `Idempotency-Key` on `POST` requests so retries can't create duplicates.
+
+```javascript Node.js
+async function withRetry(fn, attempts = 5) {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (err.status !== 429 || i === attempts - 1) throw err;
+      const wait = Number(err.headers["retry-after"] ?? 1) * 1000;
+      await new Promise((r) => setTimeout(r, wait + Math.random() * 250));
+    }
+  }
+}
+```
+
+<Tip>
+  The official [SDKs](/sdks/overview) already retry `429` responses up to two times. Add your own retry loop only for bulk jobs.
+</Tip>
+
+## Reduce your request volume
+
+- Send one message per event and let Hookline fan it out to every endpoint, instead of calling the API per endpoint.
+- Cache applications and event types instead of fetching them before every send.
+- Use `limit=250` when you page through large lists.

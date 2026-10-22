@@ -1,0 +1,70 @@
+---
+title: "Billing and usage"
+description: "Compare plans, understand how messages are counted, and track your usage."
+icon: "credit-card"
+---
+
+Hookline bills per workspace. Only the **live** environment counts toward usage. Test environment messages are free and unlimited within [rate limits](/api-reference/rate-limits).
+
+## Plans
+
+| Feature                              | Free            | Pro              | Enterprise          |
+| ------------------------------------ | --------------- | ---------------- | ------------------- |
+| Messages per month                   | 50,000          | Usage-based      | Custom              |
+| Message retention                    | 30 days         | 90 days          | Up to 1 year        |
+| Signatures, retries, and logs        | Yes             | Yes              | Yes                 |
+| Consumer portal                      | Yes             | Yes              | Yes, with custom domain |
+| [Transformations](/features/transformations) | No      | Yes              | Yes                 |
+| [Channels](/sending/channels)        | No              | Yes              | Yes                 |
+| Message throughput                   | Standard        | 1,000 messages/s | Custom              |
+| [Single sign-on](/account/sso) and SCIM | No           | No               | Yes                 |
+| [Audit log](/features/audit-log)     | No              | No               | Yes                 |
+| Uptime SLA                           | None            | None             | 99.99%              |
+| Support                              | Community email | Email            | Dedicated channel   |
+
+For pricing, go to **Settings** > **Billing** in the [dashboard](https://app.hookline.example) or contact sales.
+
+## How messages are counted
+
+Hookline counts one message each time you create a message with the API, regardless of how many endpoints receive it.
+
+- A message fanned out to 5 endpoints counts once.
+- Retries and manual resends don't count.
+- Messages deduplicated by `event_id` or `Idempotency-Key` don't count. See [Idempotency](/sending/idempotency).
+- A message with no matching endpoints still counts.
+- [Operational webhooks](/features/operational-webhooks) don't count.
+
+<Tip>
+  To avoid paying for messages nobody receives, check whether an application has any enabled endpoints before you send. Most teams skip creating messages for customers who haven't set up webhooks.
+</Tip>
+
+## Track usage
+
+Go to **Settings** > **Usage** to see:
+
+- Messages sent this billing period, with a daily chart.
+- Top applications by message volume.
+- Your projected total for the period.
+
+Owners and Admins get an email when usage reaches 80% and 100% of the Free plan quota.
+
+## What happens at the Free quota
+
+When a Free workspace reaches 50,000 messages in a month, the API returns `429` with the code `quota_exceeded` for new messages. Hookline still delivers and retries messages that were already accepted. Upgrade to Pro to keep sending immediately.
+
+## Change your plan
+
+1. Go to **Settings** > **Billing**.
+2. Click **Change plan** and pick a plan.
+3. Enter payment details if prompted.
+
+Upgrades take effect immediately. Downgrades take effect at the end of the billing period. Features that the new plan doesn't include, such as transformations, stop running on that date.
+
+## Invoices
+
+Owners can download invoices and update the billing email under **Settings** > **Billing** > **Invoices**.
+
+## Related
+
+- [Workspaces](/account/workspaces)
+- [Rate limits](/api-reference/rate-limits)

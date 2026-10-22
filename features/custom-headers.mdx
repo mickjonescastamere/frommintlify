@@ -1,0 +1,68 @@
+---
+title: "Custom headers"
+description: "Attach static HTTP headers to every delivery sent to an endpoint."
+icon: "heading"
+---
+
+Some receivers need extra headers on every request. Examples include a static token checked by an API gateway, or a routing header for a load balancer. Custom headers let you, or your customers, add them per endpoint.
+
+## Add headers
+
+<Tabs>
+  <Tab title="Dashboard">
+    1. Open the endpoint in **Applications**.
+    2. Go to the **Advanced** tab and find **Custom headers**.
+    3. Enter a header name and value, then click **Add**.
+    4. Click **Save**.
+  </Tab>
+  <Tab title="API">
+    Set the `headers` object when you create or update an endpoint.
+
+    ```bash
+    curl -X PATCH https://api.hookline.example/v1/applications/app_2Zk81/endpoints/ep_7Qm3 \
+      -H "Authorization: Bearer $HOOKLINE_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "headers": {
+          "X-Gateway-Token": "gw_9f3a1c",
+          "X-Tenant": "acme"
+        }
+      }'
+    ```
+
+    To remove a header, set its value to `null`. See the [endpoints API](/api-reference/endpoints) for details.
+  </Tab>
+</Tabs>
+
+## Reserved headers
+
+You can't set or override these headers. Hookline rejects the request with an `invalid_request_error`.
+
+| Header              | Why it is reserved                              |
+| ------------------- | ----------------------------------------------- |
+| `webhook-id`        | Identifies the message and is signed.           |
+| `webhook-timestamp` | Used for signatures and replay protection.      |
+| `webhook-signature` | The HMAC signature itself.                      |
+| `content-type`      | Always `application/json`.                      |
+| `user-agent`        | Always `Hookline-Webhooks/1.0`.                 |
+
+## Limits
+
+- Up to 20 custom headers per endpoint.
+- Header names must be valid HTTP tokens. They are case-insensitive.
+- Each value can be up to 1,024 characters.
+
+<Warning>
+  Hookline stores custom headers as plain configuration. Anyone with access to the endpoint can see them, including your customer in the consumer portal. Don't rely on them as your only security control. Always [verify signatures](/security/verifying-signatures).
+</Warning>
+
+## Dynamic headers
+
+Custom headers are static. To compute a header from the payload, use a [transformation](/features/transformations) and set `webhook.headers`.
+
+```javascript
+function handler(webhook) {
+  webhook.headers["X-Customer-Id"] = webhook.payload.data.customer_id;
+  return webhook;
+}
+```

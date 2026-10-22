@@ -1,0 +1,148 @@
+---
+title: "Event types"
+description: "Define, list, update, and archive the event types your application sends."
+icon: "tags"
+---
+
+import PaginationParams from "/snippets/pagination-params.mdx";
+
+Event types describe the kinds of events you send, such as `invoice.paid`. You must create an event type before you send messages with it. Event types are shared by all applications in an environment.
+
+## The event type object
+
+<ResponseField name="name" type="string">
+  Unique name in `resource.action` form, lowercase, up to 64 characters.
+</ResponseField>
+<ResponseField name="description" type="string">
+  Shown in the event catalog and consumer portal.
+</ResponseField>
+<ResponseField name="schema" type="object | null">
+  Optional JSON Schema describing the payload.
+</ResponseField>
+<ResponseField name="archived" type="boolean">
+  Archived event types can't be used for new messages or subscriptions.
+</ResponseField>
+<ResponseField name="feature_flag" type="string | null">
+  When set, the event type is hidden from customers who don't have this flag.
+</ResponseField>
+<ResponseField name="created_at" type="string">
+  ISO 8601 creation time.
+</ResponseField>
+
+## Create an event type
+
+`POST /event-types`
+
+<ParamField body="name" type="string" required>
+  The event type name, for example `invoice.paid`.
+</ParamField>
+<ParamField body="description" type="string" required>
+  A short explanation of when the event is sent.
+</ParamField>
+<ParamField body="schema" type="object">
+  JSON Schema for the payload.
+</ParamField>
+<ParamField body="feature_flag" type="string">
+  Feature flag that gates visibility.
+</ParamField>
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.hookline.example/v1/event-types \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "invoice.paid",
+    "description": "Sent when an invoice is paid in full.",
+    "schema": {
+      "type": "object",
+      "required": ["invoice_id", "amount", "currency"],
+      "properties": {
+        "invoice_id": { "type": "string" },
+        "amount": { "type": "integer" },
+        "currency": { "type": "string" }
+      }
+    }
+  }'
+```
+
+```javascript Node.js
+await hookline.eventTypes.create({
+  name: "invoice.paid",
+  description: "Sent when an invoice is paid in full.",
+});
+```
+
+</CodeGroup>
+
+Creating a name that already exists fails with `409 conflict_error`.
+
+## List event types
+
+`GET /event-types`
+
+<PaginationParams />
+
+<ParamField query="include_archived" type="boolean" default="false">
+  Include archived event types.
+</ParamField>
+
+```bash cURL
+curl https://api.hookline.example/v1/event-types \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY"
+```
+
+```json Response
+{
+  "data": [
+    {
+      "name": "invoice.paid",
+      "description": "Sent when an invoice is paid in full.",
+      "schema": null,
+      "archived": false,
+      "feature_flag": null,
+      "created_at": "2026-09-30T10:00:00Z"
+    }
+  ],
+  "iterator": null,
+  "done": true
+}
+```
+
+## Retrieve an event type
+
+`GET /event-types/{name}`
+
+```bash cURL
+curl https://api.hookline.example/v1/event-types/invoice.paid \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY"
+```
+
+## Update an event type
+
+`PATCH /event-types/{name}`
+
+You can change `description`, `schema`, `feature_flag`, and `archived`. The name can't change. Set `archived` to `false` to restore an archived event type.
+
+```bash cURL
+curl -X PATCH https://api.hookline.example/v1/event-types/invoice.paid \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"description": "Sent when an invoice is paid in full or by credit."}'
+```
+
+## Archive an event type
+
+`DELETE /event-types/{name}`
+
+Archives the event type rather than deleting it, so existing messages and logs stay readable. Returns `204 No Content`.
+
+<Note>
+  Endpoints subscribed to an archived event type keep their subscription, but no new messages of that type can be created.
+</Note>
+
+## Related
+
+- [Event types guide](/sending/event-types)
+- [Event catalog](/sending/event-catalog)

@@ -1,0 +1,74 @@
+---
+title: "Workspaces"
+description: "Understand workspaces, regions, and environments, and learn how to create and manage them."
+icon: "building"
+---
+
+import TestModeNote from "/snippets/test-mode-note.mdx";
+
+A workspace is the top-level container in Hookline. It holds your applications, endpoints, event types, API keys, members, and billing. Workspace IDs start with `ws_`.
+
+Most companies need one workspace per product. Create separate workspaces only when products have different teams, billing, or data residency needs.
+
+## What a workspace contains
+
+| Item                            | Scope                                 |
+| ------------------------------- | ------------------------------------- |
+| Members and roles               | Shared across both environments.      |
+| Billing and plan                | Shared across both environments.      |
+| Applications, endpoints, messages | Separate per environment.           |
+| Event types                     | Separate per environment.             |
+| API keys                        | Separate per environment.             |
+
+## Environments
+
+Every workspace has a `test` and a `live` [environment](/getting-started/environments). Switch between them with the toggle at the top of the dashboard.
+
+<TestModeNote />
+
+## Regions
+
+You choose a region when you create a workspace. Hookline stores all message data for that workspace in the chosen region.
+
+| Region | API base URL                            |
+| ------ | --------------------------------------- |
+| `us`   | `https://api.hookline.example/v1`       |
+| `eu`   | `https://api.eu.hookline.example/v1`    |
+
+<Warning>
+  You can't change a workspace's region after you create it. To move regions, create a new workspace and migrate your applications and endpoints.
+</Warning>
+
+## Create a workspace
+
+<Steps>
+  <Step title="Open the workspace menu">
+    Click your workspace name in the top-left corner of the dashboard, then click **Create workspace**.
+  </Step>
+  <Step title="Name it and pick a region">
+    Enter a name, such as your product name. Choose **US** or **EU**.
+  </Step>
+  <Step title="Invite your team">
+    Add [team members](/account/team-members) now, or skip and do it later.
+  </Step>
+</Steps>
+
+You become the **Owner** of every workspace you create.
+
+## Rename or delete a workspace
+
+Go to **Settings** > **General**.
+
+- To rename the workspace, edit **Workspace name** and click **Save**.
+- To delete it, click **Delete workspace** at the bottom of the page. Only Owners can delete a workspace. Deletion is permanent and removes all messages, endpoints, and logs after a 7-day grace period.
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Team members" icon="users" href="/account/team-members">
+    Invite people and assign roles.
+  </Card>
+  <Card title="Billing and usage" icon="credit-card" href="/account/billing-and-usage">
+    Plans, quotas, and invoices.
+  </Card>
+</CardGroup>

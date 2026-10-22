@@ -1,0 +1,208 @@
+---
+title: "Endpoints"
+description: "Manage the URLs that receive webhooks, their signing secrets, and recovery of failed messages."
+icon: "link"
+---
+
+import PaginationParams from "/snippets/pagination-params.mdx";
+
+An endpoint is a URL inside an application that receives deliveries. Each message is delivered to every endpoint in its application whose event type and channel filters match.
+
+## The endpoint object
+
+<ResponseField name="id" type="string">
+  Unique identifier, prefixed with `ep_`.
+</ResponseField>
+<ResponseField name="url" type="string">
+  The delivery URL. Must use HTTPS in live. HTTP is allowed in test.
+</ResponseField>
+<ResponseField name="description" type="string">
+  Free-text description shown to your customer.
+</ResponseField>
+<ResponseField name="event_types" type="string[]">
+  Event types this endpoint receives. An empty array means all event types.
+</ResponseField>
+<ResponseField name="channels" type="string[]">
+  When set, the endpoint receives only messages that share at least one channel.
+</ResponseField>
+<ResponseField name="disabled" type="boolean">
+  Disabled endpoints receive no deliveries.
+</ResponseField>
+<ResponseField name="rate_limit" type="integer | null">
+  Maximum deliveries per second. Excess deliveries are queued, not dropped.
+</ResponseField>
+<ResponseField name="headers" type="object">
+  Custom headers added to every delivery.
+</ResponseField>
+<ResponseField name="created_at" type="string">
+  ISO 8601 creation time.
+</ResponseField>
+
+```json Example
+{
+  "id": "ep_7Hd1",
+  "url": "https://acme.example.com/webhooks/hookline",
+  "description": "Billing events",
+  "event_types": ["invoice.paid", "invoice.payment_failed"],
+  "channels": [],
+  "disabled": false,
+  "rate_limit": 20,
+  "headers": { "X-Acme-Source": "hookline" },
+  "created_at": "2026-10-02T08:15:00Z"
+}
+```
+
+## Create an endpoint
+
+`POST /applications/{app}/endpoints`
+
+<ParamField path="app" type="string" required>
+  Application `id` or `uid`.
+</ParamField>
+<ParamField body="url" type="string" required>
+  The delivery URL.
+</ParamField>
+<ParamField body="description" type="string">
+  Free-text description.
+</ParamField>
+<ParamField body="event_types" type="string[]">
+  Event types to subscribe to. Omit to receive all.
+</ParamField>
+<ParamField body="channels" type="string[]">
+  Channels to filter on.
+</ParamField>
+<ParamField body="rate_limit" type="integer">
+  Maximum deliveries per second.
+</ParamField>
+<ParamField body="headers" type="object">
+  Custom headers. You can't override `webhook-*`, `content-type`, or `user-agent`.
+</ParamField>
+<ParamField body="secret" type="string">
+  A `whsec_` secret to use. Omit to have Hookline generate one.
+</ParamField>
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.hookline.example/v1/applications/acme/endpoints \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://acme.example.com/webhooks/hookline",
+    "event_types": ["invoice.paid", "invoice.payment_failed"]
+  }'
+```
+
+```javascript Node.js
+const endpoint = await hookline.endpoints.create("acme", {
+  url: "https://acme.example.com/webhooks/hookline",
+  eventTypes: ["invoice.paid", "invoice.payment_failed"],
+});
+```
+
+</CodeGroup>
+
+## List endpoints
+
+`GET /applications/{app}/endpoints`
+
+<PaginationParams />
+
+```bash cURL
+curl https://api.hookline.example/v1/applications/acme/endpoints \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY"
+```
+
+## Retrieve an endpoint
+
+`GET /applications/{app}/endpoints/{ep_id}`
+
+```bash cURL
+curl https://api.hookline.example/v1/applications/acme/endpoints/ep_7Hd1 \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY"
+```
+
+## Update an endpoint
+
+`PATCH /applications/{app}/endpoints/{ep_id}`
+
+Send only the fields to change. Set `disabled` to `false` to re-enable an endpoint that Hookline disabled automatically.
+
+<CodeGroup>
+
+```bash cURL
+curl -X PATCH https://api.hookline.example/v1/applications/acme/endpoints/ep_7Hd1 \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"disabled": false}'
+```
+
+```javascript Node.js
+await hookline.endpoints.update("acme", "ep_7Hd1", { disabled: false });
+```
+
+</CodeGroup>
+
+## Delete an endpoint
+
+`DELETE /applications/{app}/endpoints/{ep_id}`
+
+Returns `204 No Content`. Pending retries for this endpoint are canceled.
+
+## Get the signing secret
+
+`GET /applications/{app}/endpoints/{ep_id}/secret`
+
+```json Response
+{ "key": "whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw" }
+```
+
+## Rotate the signing secret
+
+`POST /applications/{app}/endpoints/{ep_id}/secret/rotate`
+
+<ParamField body="key" type="string">
+  The new `whsec_` secret. Omit to generate one.
+</ParamField>
+
+The new secret is used immediately. For 24 hours, deliveries carry signatures from both the old and new secret. See [Secret rotation](/security/secret-rotation).
+
+```bash cURL
+curl -X POST https://api.hookline.example/v1/applications/acme/endpoints/ep_7Hd1/secret/rotate \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY"
+```
+
+## Recover failed messages
+
+`POST /applications/{app}/endpoints/{ep_id}/recover`
+
+Resends every message that failed for this endpoint since a point in time.
+
+<ParamField body="since" type="string" required>
+  ISO 8601 timestamp. Can't be more than 14 days ago.
+</ParamField>
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.hookline.example/v1/applications/acme/endpoints/ep_7Hd1/recover \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"since": "2026-10-20T00:00:00Z"}'
+```
+
+```javascript Node.js
+await hookline.endpoints.recover("acme", "ep_7Hd1", {
+  since: new Date("2026-10-20T00:00:00Z"),
+});
+```
+
+</CodeGroup>
+
+Returns `202 Accepted` with a recovery task. Messages are resent in the background.
+
+## Related
+
+- [Endpoint health](/delivery/endpoint-health)
+- [Replaying messages](/delivery/replaying-messages)
+- [Custom headers](/features/custom-headers)

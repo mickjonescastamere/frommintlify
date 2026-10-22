@@ -14,8 +14,11 @@
 
 ## Terminology
 
-{/* Add product-specific terms and preferred usage */}
-{/* Example: Use "workspace" not "project", "member" not "user" */}
+- The product is **Hookline**, a fictional webhook delivery platform. Use `hookline.example` domains only.
+- "Your app" is the system that sends events; "your customers" or "consumers" receive webhooks.
+- Use "application" (one per customer), "endpoint" (a URL), "event type", "message" (one event), and "attempt" (one delivery try).
+- Use "workspace" not "organization" or "project", and "member" not "user" for people on a workspace.
+- Reuse content from `snippets/` (prerequisites, warnings, retry schedule, signature code) instead of duplicating it.
 
 ## Style preferences
 

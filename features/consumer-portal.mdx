@@ -1,0 +1,99 @@
+---
+title: "Consumer portal"
+description: "Embed a ready-made UI where your customers add endpoints, browse delivery logs, and replay messages."
+icon: "window-maximize"
+---
+
+import ApiKeyWarning from "/snippets/api-key-warning.mdx";
+
+The consumer portal is a hosted UI that you embed in your own product. Your customers use it to manage their webhook endpoints without contacting your support team.
+
+In the portal, a customer can:
+
+- Add, edit, disable, and delete endpoints.
+- Choose which event types each endpoint receives.
+- Reveal and rotate signing secrets.
+- Browse message logs and every delivery attempt.
+- Resend a single message or recover all failed messages.
+- Browse your [event catalog](/sending/event-catalog).
+
+Each portal session is scoped to one [application](/sending/applications). A customer never sees another customer's data.
+
+## Embed the portal
+
+<Steps>
+  <Step title="Create a portal access link on your server">
+    Call the [portal access](/api-reference/portal-access) endpoint for the customer's application. The response contains a one-time `url`.
+
+    ```bash
+    curl -X POST https://api.hookline.example/v1/applications/app_2Zk81/portal-access \
+      -H "Authorization: Bearer $HOOKLINE_API_KEY"
+    ```
+
+    ```json
+    {
+      "url": "https://app.hookline.example/portal/login#key=eyJhbGciOi...",
+      "token": "eyJhbGciOi...",
+      "expires_at": "2026-10-30T09:30:00Z"
+    }
+    ```
+  </Step>
+  <Step title="Render it in your app">
+    Pass the URL to your frontend and load it in an iframe or with the React component.
+
+    <CodeGroup>
+
+    ```html iframe
+    <iframe
+      src="https://app.hookline.example/portal/login#key=eyJhbGciOi..."
+      style="width: 100%; height: 800px; border: none"
+      allow="clipboard-write"
+    ></iframe>
+    ```
+
+    ```jsx React
+    import { HooklinePortal } from "@hookline/react";
+
+    export function WebhooksPage({ portalUrl }) {
+      return <HooklinePortal url={portalUrl} style={{ height: 800 }} />;
+    }
+    ```
+
+    </CodeGroup>
+  </Step>
+</Steps>
+
+<ApiKeyWarning />
+
+Portal links are valid for 7 days by default. Generate a fresh link each time the customer opens your webhooks page instead of storing it.
+
+## Brand the portal
+
+Go to **Settings** > **Consumer portal** to match the portal to your product.
+
+| Setting       | Description                                                       | Plan       |
+| ------------- | ----------------------------------------------------------------- | ---------- |
+| Logo          | Shown in the portal header.                                       | All plans  |
+| Primary color | Used for buttons and links.                                       | All plans  |
+| Font          | Any Google Fonts family name.                                     | All plans  |
+| Theme         | Follow the system theme, or force light or dark.                  | All plans  |
+| Custom domain | Serve the portal from a domain such as `webhooks.yourcompany.com`. | Enterprise |
+
+## Control what customers can do
+
+Under **Settings** > **Consumer portal** > **Permissions**, hide features you don't want customers to use, such as transformations or secret rotation. Hookline blocks hidden features on the server too, not just in the UI.
+
+<Tip>
+  Link to the portal from your webhook documentation. Customers who can see delivery logs solve most integration problems on their own.
+</Tip>
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Portal access API" icon="key" href="/api-reference/portal-access">
+    Request and response details.
+  </Card>
+  <Card title="Event catalog" icon="list" href="/sending/event-catalog">
+    Publish your event types and schemas.
+  </Card>
+</CardGroup>

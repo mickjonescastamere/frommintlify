@@ -1,0 +1,66 @@
+---
+title: "Environments"
+description: "Use the test and live environments to build safely before you send real webhooks."
+icon: "layer-group"
+---
+
+import TestModeNote from "/snippets/test-mode-note.mdx";
+
+Every Hookline workspace has two environments: `test` and `live`. Build and debug in test, then switch to live when you're ready to deliver real events to real customers.
+
+<TestModeNote />
+
+## Differences between environments
+
+| Behavior             | Test                   | Live                    |
+| -------------------- | ---------------------- | ----------------------- |
+| API key prefix       | `hl_test_`             | `hl_live_`              |
+| Endpoint URL schemes | HTTP or HTTPS          | HTTPS only              |
+| API rate limit       | 25 requests per second | 100 requests per second |
+| Counts toward quota  | No                     | Yes                     |
+
+Everything else, including the retry schedule, signatures, transformations, and operational webhooks, behaves the same in both environments.
+
+## Choose the environment
+
+The API key decides the environment. There is no separate URL or header.
+
+```bash
+# Test
+curl https://api.hookline.example/v1/applications \
+  -H "Authorization: Bearer hl_test_xxxxxxxx"
+
+# Live
+curl https://api.hookline.example/v1/applications \
+  -H "Authorization: Bearer hl_live_xxxxxxxx"
+```
+
+In the dashboard, use the **Test** / **Live** switch in the top bar. In the CLI, pass `--env test` or `--env live`.
+
+## Move from test to live
+
+Objects are not copied between environments. Before you go live:
+
+<Steps>
+  <Step title="Recreate event types">
+    Create the same event types in live. Script this with the API so both environments stay in sync.
+  </Step>
+  <Step title="Create a live API key">
+    In **Settings** > **API keys**, switch to **Live** and create a key. Store it in your production secret manager.
+  </Step>
+  <Step title="Create applications on demand">
+    Create a live application when a customer first sets up webhooks, rather than migrating test data.
+  </Step>
+  <Step title="Use HTTPS endpoints">
+    Live endpoints must use HTTPS. Creating an HTTP endpoint in live fails with `endpoint_url_invalid`.
+  </Step>
+</Steps>
+
+<Tip>
+  Read the key from an environment variable such as `HOOKLINE_API_KEY` in every deployment. Your code then stays identical across environments.
+</Tip>
+
+## Related
+
+- [API keys](/security/api-keys)
+- [Rate limits](/api-reference/rate-limits)

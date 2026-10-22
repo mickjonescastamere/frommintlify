@@ -1,0 +1,77 @@
+---
+title: "Authentication"
+description: "Authenticate Hookline API requests with environment-scoped bearer API keys."
+icon: "key"
+---
+
+import ApiKeyWarning from "/snippets/api-key-warning.mdx";
+
+The Hookline API authenticates every request with an API key passed as a bearer token.
+
+```bash
+curl https://api.hookline.example/v1/event-types \
+  -H "Authorization: Bearer hl_test_4eC39HqLyjWDarjtT1zdp7dc"
+```
+
+<ApiKeyWarning />
+
+## Key prefixes and environments
+
+Each key belongs to exactly one environment. The prefix tells you which:
+
+| Prefix | Environment | Use it for |
+| ------ | ----------- | ---------- |
+| `hl_test_` | Test | Development, CI, staging |
+| `hl_live_` | Live | Production traffic |
+
+A test key can't read or write live data, and the other way around.
+
+## Scopes
+
+Choose the narrowest scope that works when you create a key.
+
+| Scope | Allowed actions |
+| ----- | --------------- |
+| `full` | Every API operation. |
+| `read_only` | `GET` requests only. Good for dashboards and reporting jobs. |
+| `send_only` | Only `POST /applications/{app}/messages`. Good for services that emit events. |
+
+A request outside the key's scope fails with `403 permission_error`.
+
+## Create a key
+
+<Steps>
+  <Step title="Open API keys">
+    In the dashboard, go to **Settings** > **API keys**.
+  </Step>
+  <Step title="Create the key">
+    Click **Create key**, choose the environment and scope, and give the key a descriptive name such as `billing-service-prod`.
+  </Step>
+  <Step title="Store it safely">
+    Copy the key into your secret manager. Hookline shows the full key only once.
+  </Step>
+</Steps>
+
+## Authentication errors
+
+| Status | `code` | Cause |
+| ------ | ------ | ----- |
+| `401` | `missing_api_key` | No `Authorization` header was sent. |
+| `401` | `invalid_api_key` | The key is malformed, revoked, or belongs to another region. |
+| `403` | `insufficient_scope` | The key's scope doesn't allow this operation. |
+
+```json 401 response
+{
+  "error": {
+    "type": "authentication_error",
+    "code": "invalid_api_key",
+    "message": "The API key provided is invalid or has been revoked.",
+    "request_id": "req_9Fp3QaT1"
+  }
+}
+```
+
+## Related
+
+- [API keys](/security/api-keys) covers rotation and best practices.
+- [Errors](/api-reference/errors) lists every error type.

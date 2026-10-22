@@ -1,0 +1,89 @@
+---
+title: "Migrating from an in-house system"
+sidebarTitle: "Migrate from in-house"
+description: "Move an existing homegrown webhook system to Hookline without breaking your customers' integrations."
+icon: "truck-ramp-box"
+---
+
+import Prerequisites from "/snippets/prerequisites.mdx";
+
+Many teams start with a homegrown webhook sender: a queue, a worker that makes HTTP calls, and a table of customer URLs. This guide shows how to move that system to Hookline in stages, so customers keep receiving events throughout.
+
+## Prerequisites
+
+<Prerequisites />
+
+You also need read access to the table where you store your customers' webhook URLs and secrets.
+
+## Plan the migration
+
+Map your existing concepts to Hookline objects:
+
+| Your system                     | Hookline                                                 |
+| ------------------------------- | -------------------------------------------------------- |
+| Customer or tenant              | [Application](/sending/applications), with `uid` set to your customer ID |
+| Webhook URL row                 | [Endpoint](/api-reference/endpoints)                     |
+| Event names                     | [Event types](/sending/event-types)                      |
+| Queue job that sends a webhook  | One API call to [create a message](/sending/messages)    |
+| Your retry logic                | Hookline's [retry schedule](/delivery/retry-schedule)    |
+
+## Migrate in stages
+
+<Steps>
+  <Step title="Register your event types">
+    Create an event type for every event you send today. Keep the exact names your customers already handle.
+
+    ```bash
+    curl -X POST https://api.hookline.example/v1/event-types \
+      -H "Authorization: Bearer $HOOKLINE_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"name": "invoice.paid", "description": "An invoice was paid in full."}'
+    ```
+  </Step>
+  <Step title="Import customers and endpoints">
+    Write a one-off script that creates an application per customer and an endpoint per URL.
+
+    ```javascript
+    import { Hookline } from "@hookline/node";
+
+    const hookline = new Hookline(process.env.HOOKLINE_API_KEY);
+
+    for (const row of await db.webhookUrls.findAll()) {
+      await hookline.applications.create({ name: row.customerName, uid: row.customerId }, { idempotencyKey: `app-${row.customerId}` });
+      await hookline.endpoints.create(row.customerId, {
+        url: row.url,
+        eventTypes: row.events,
+        secret: row.signingSecret, // keep the existing secret, if it is compatible
+      });
+    }
+    ```
+
+    If your existing secrets are not 24 to 64 random bytes, let Hookline generate new ones and plan a [secret rotation](/security/secret-rotation) with your customers.
+  </Step>
+  <Step title="Send to Hookline in parallel">
+    Keep the endpoints **disabled** in Hookline. Add a Hookline `messages.create` call next to your existing sender. Check the message log to confirm the payloads match.
+  </Step>
+  <Step title="Switch customers over">
+    Tell customers about the new signature headers and give them a cut-over date. On that date, enable each customer's Hookline endpoints and turn off your old sender for that customer. Move a few customers first, then the rest.
+  </Step>
+  <Step title="Remove the old system">
+    When every customer receives events from Hookline, delete your old worker, queue, and retry code.
+  </Step>
+</Steps>
+
+## Signature headers
+
+Your customers' verification code is the main breaking change. Hookline sends `webhook-id`, `webhook-timestamp`, and `webhook-signature` headers, signed as described in [Verifying signatures](/security/verifying-signatures).
+
+<Tip>
+  During the transition, you can add your old signature header with a [transformation](/features/transformations) or [custom headers](/features/custom-headers). This gives customers time to update their verification code.
+</Tip>
+
+## Checklist
+
+- [ ] Every event name exists as an event type.
+- [ ] Every customer has an application with `uid` set.
+- [ ] Message payloads match your old format byte for byte, or customers know about the changes.
+- [ ] Customers know the new [static IPs](/security/static-ips) if they use a firewall.
+- [ ] You subscribed to [operational webhooks](/features/operational-webhooks) to catch failing endpoints.
+- [ ] You embedded the [consumer portal](/features/consumer-portal), or have a plan for customers to update their URLs.

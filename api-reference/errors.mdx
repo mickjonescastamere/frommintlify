@@ -1,0 +1,94 @@
+---
+title: "Errors"
+description: "How the Hookline API reports errors, and how to handle each error type."
+icon: "triangle-exclamation"
+---
+
+import ErrorObject from "/snippets/error-object.mdx";
+
+Hookline uses conventional HTTP status codes. A `2xx` status means success, `4xx` means a problem with the request, and `5xx` means a problem on Hookline's side.
+
+## The error object
+
+Every error response has a JSON body with an `error` object:
+
+<ErrorObject />
+
+<ResponseField name="error" type="object">
+  <Expandable title="properties" defaultOpen>
+    <ResponseField name="type" type="string">
+      The broad category of error. See the table below.
+    </ResponseField>
+    <ResponseField name="code" type="string">
+      A specific, stable, machine-readable code such as `endpoint_url_invalid`. Branch on this value in your code.
+    </ResponseField>
+    <ResponseField name="message" type="string">
+      A human-readable explanation. The wording can change, so don't parse it.
+    </ResponseField>
+    <ResponseField name="param" type="string">
+      The request parameter that caused the error, when one applies.
+    </ResponseField>
+    <ResponseField name="request_id" type="string">
+      A unique ID for the request. Include it when you contact support.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Error types
+
+| `type` | Status | Meaning | Retry? |
+| ------ | ------ | ------- | ------ |
+| `invalid_request_error` | `400`, `422` | The request is malformed or fails validation. | No, fix the request. |
+| `authentication_error` | `401` | The API key is missing or invalid. | No. |
+| `permission_error` | `403` | The key's scope or your role doesn't allow the action. | No. |
+| `not_found_error` | `404` | The object doesn't exist in this environment. | No. |
+| `conflict_error` | `409` | A duplicate `uid`, event type, or reused idempotency key. | No. |
+| `rate_limit_error` | `429` | You sent too many requests. | Yes, after `Retry-After`. |
+| `api_error` | `5xx` | Something went wrong at Hookline. | Yes, with backoff. |
+
+## Common error codes
+
+| `code` | Type | Fix |
+| ------ | ---- | --- |
+| `endpoint_url_invalid` | `invalid_request_error` | Use a valid HTTPS URL. HTTP is allowed only in test. |
+| `event_type_not_found` | `invalid_request_error` | Create the event type before sending messages with it. |
+| `payload_too_large` | `invalid_request_error` | Keep message payloads under 1 MB. |
+| `application_uid_taken` | `conflict_error` | Choose another `uid`, or fetch the existing application. |
+| `idempotency_conflict` | `conflict_error` | You reused an `Idempotency-Key` with a different body. |
+| `rate_limit_exceeded` | `rate_limit_error` | Slow down and retry after `Retry-After` seconds. |
+
+## Handle errors in code
+
+<CodeGroup>
+
+```javascript Node.js
+import { Hookline, HooklineError } from "@hookline/node";
+
+try {
+  await hookline.endpoints.create("app_2Zk8", { url: "http://example.com/hook" });
+} catch (err) {
+  if (err instanceof HooklineError && err.code === "endpoint_url_invalid") {
+    console.error(`Bad URL (${err.requestId}): ${err.message}`);
+  } else {
+    throw err;
+  }
+}
+```
+
+```bash cURL
+curl -i https://api.hookline.example/v1/applications/app_missing \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY"
+# HTTP/2 404
+# {"error":{"type":"not_found_error","code":"application_not_found", ...}}
+```
+
+</CodeGroup>
+
+<Tip>
+  The official [SDKs](/sdks/overview) retry `429` and `5xx` responses automatically, up to two times with exponential backoff.
+</Tip>
+
+## Related
+
+- [Rate limits](/api-reference/rate-limits)
+- [Troubleshooting](/resources/troubleshooting)

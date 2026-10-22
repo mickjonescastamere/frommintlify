@@ -1,0 +1,77 @@
+---
+title: "Static source IPs"
+description: "Allowlist the fixed IP addresses Hookline delivers webhooks from."
+icon: "network-wired"
+---
+
+Hookline sends every webhook from a fixed set of IP addresses. Customers with strict firewalls can allowlist these addresses so that only Hookline traffic reaches their webhook endpoint.
+
+## IP addresses
+
+Deliveries come from the region your workspace was created in.
+
+| Region | IP addresses                     |
+| ------ | -------------------------------- |
+| `us`   | `192.0.2.10`, `192.0.2.11`       |
+| `eu`   | `198.51.100.20`, `198.51.100.21` |
+
+<Warning>
+  If your customers receive webhooks from senders in both regions, allowlist the addresses for **both** regions. To check which region your workspace uses, open **Settings** > **General** in the dashboard.
+</Warning>
+
+## Machine-readable list
+
+To keep firewall rules up to date automatically, fetch the current list as JSON. This request doesn't need an API key.
+
+```bash
+curl https://api.hookline.example/v1/source-ips
+```
+
+```json Response
+{
+  "us": ["192.0.2.10", "192.0.2.11"],
+  "eu": ["198.51.100.20", "198.51.100.21"],
+  "updated_at": "2026-09-01T00:00:00Z"
+}
+```
+
+Hookline announces any change to the list at least 30 days in advance in the [changelog](/resources/changelog) and by email to workspace Owners.
+
+## Example firewall rules
+
+<CodeGroup>
+
+```nginx nginx
+location /webhooks {
+    allow 192.0.2.10;
+    allow 192.0.2.11;
+    allow 198.51.100.20;
+    allow 198.51.100.21;
+    deny all;
+
+    proxy_pass http://app_upstream;
+}
+```
+
+```bash iptables
+for ip in 192.0.2.10 192.0.2.11 198.51.100.20 198.51.100.21; do
+  iptables -A INPUT -p tcp --dport 443 -s "$ip" -j ACCEPT
+done
+iptables -A INPUT -p tcp --dport 443 -j DROP
+```
+
+</CodeGroup>
+
+## IP allowlisting isn't enough on its own
+
+An allowlist confirms that the request came from Hookline's network. It doesn't confirm which Hookline customer sent it, and it doesn't detect tampering. Always [verify signatures](/security/verifying-signatures) as well.
+
+<Note>
+  The [CLI relay](/cli/local-development) for local development forwards requests from your own machine, not from these addresses. Disable IP filtering on local test servers.
+</Note>
+
+## Related
+
+- [Verifying signatures](/security/verifying-signatures)
+- [Replay protection](/security/replay-protection)
+- [Workspaces](/account/workspaces)

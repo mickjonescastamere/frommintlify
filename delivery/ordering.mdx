@@ -1,0 +1,79 @@
+---
+title: "Message ordering"
+sidebarTitle: "Ordering"
+description: "Why webhooks can arrive out of order, and how to design payloads and receivers that handle it."
+icon: "arrow-down-1-9"
+---
+
+Hookline delivers messages in order on a **best-effort** basis. Most of the time, messages arrive in the order you created them. Hookline doesn't guarantee it, and your receivers shouldn't depend on it.
+
+## Why order can change
+
+Strict ordering would mean one failed message blocks every message behind it. Instead, Hookline delivers each message independently. Order can change when:
+
+- A delivery fails and is retried, while later messages succeed in the meantime.
+- Messages are created within milliseconds of each other and processed in parallel.
+- You [replay](/delivery/replaying-messages) older messages after newer ones were delivered.
+- A [rate limit](/delivery/endpoint-rate-limits) queue drains while other deliveries continue.
+
+For example, a customer might receive `subscription.canceled` before the `invoice.paid` that came earlier in your system.
+
+## Design payloads for out-of-order delivery
+
+Include enough information in each payload for the receiver to work out the correct order.
+
+```json
+{
+  "type": "subscription.canceled",
+  "id": "evt_2bX9",
+  "created_at": "2026-10-23T09:30:00Z",
+  "data": {
+    "subscription_id": "sub_552",
+    "status": "canceled",
+    "version": 7
+  }
+}
+```
+
+<AccordionGroup>
+  <Accordion title="Add a timestamp from your system" icon="clock">
+    Include `created_at` with the time the event happened in your app. Don't rely on when the webhook arrived.
+  </Accordion>
+  <Accordion title="Add a version or sequence number" icon="arrow-up-1-9">
+    A per-object `version` that increases with each change lets the receiver ignore older updates.
+  </Accordion>
+  <Accordion title="Send the full current state" icon="box">
+    Payloads that contain the object's full current state are easier to apply than deltas. A receiver can safely overwrite older data.
+  </Accordion>
+</AccordionGroup>
+
+See [Payload best practices](/sending/payload-best-practices) for more guidance.
+
+## Handle out-of-order events on the receiver
+
+The receiver keeps the latest version it has seen and skips anything older:
+
+```python
+def handle_subscription_event(event):
+    data = event["data"]
+    current = db.subscriptions.get(data["subscription_id"])
+
+    if current and current.version >= data["version"]:
+        return  # stale event, already applied a newer one
+
+    db.subscriptions.upsert(
+        id=data["subscription_id"],
+        status=data["status"],
+        version=data["version"],
+    )
+```
+
+<Tip>
+  Another option is to treat a webhook as a notification only. When it arrives, the receiver fetches the latest state of the object from your API. The result is always current, whatever order the webhooks arrive in.
+</Tip>
+
+## Related
+
+- [Retry schedule](/delivery/retry-schedule)
+- [Replay protection](/security/replay-protection)
+- [Payload best practices](/sending/payload-best-practices)

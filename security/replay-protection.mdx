@@ -1,0 +1,71 @@
+---
+title: "Replay protection"
+description: "Prevent attackers from capturing a valid webhook and sending it to your endpoint again."
+icon: "clock-rotate-left"
+---
+
+A valid signature proves a webhook came from Hookline. It doesn't prove the request is fresh. An attacker who captures a signed request could resend it later, and it would still carry a valid signature. Replay protection closes that gap.
+
+## Timestamp tolerance
+
+The `webhook-timestamp` header is part of the signed content, so an attacker can't change it without invalidating the signature. Receivers reject any request whose timestamp is more than **5 minutes** away from the current time.
+
+The official SDKs apply this check automatically. If you [verify manually](/security/verifying-signatures#verify-manually), add the check yourself:
+
+```python
+import time
+
+TOLERANCE_SECONDS = 5 * 60
+
+def check_timestamp(header_value: str) -> None:
+    timestamp = int(header_value)
+    if abs(time.time() - timestamp) > TOLERANCE_SECONDS:
+        raise ValueError("Webhook timestamp outside tolerance")
+```
+
+<Note>
+  The tolerance works in both directions, so it also rejects timestamps more than 5 minutes in the future. Keep your servers' clocks synchronized with NTP to avoid false rejections.
+</Note>
+
+Hookline signs each retry again with a new timestamp. A retry delivered hours after the original message still passes the tolerance check.
+
+## Deduplicate by message ID
+
+Timestamp checks block old replays, but a request replayed within the 5-minute window still passes. Hookline can also legitimately deliver the same message more than once. For example, your endpoint might process a request but time out before it responds.
+
+Store the `webhook-id` header of each processed message and skip IDs you've already seen:
+
+```javascript
+async function handleWebhook(event, headers) {
+  const messageId = headers["webhook-id"];
+
+  // The insert fails if the ID already exists (unique constraint).
+  const inserted = await db.processedWebhooks.insertIfAbsent({
+    id: messageId,
+    receivedAt: new Date(),
+  });
+  if (!inserted) return; // duplicate, already handled
+
+  await processEvent(event);
+}
+```
+
+<Tip>
+  Keep processed IDs for at least 30 hours. That covers the full [retry schedule](/delivery/retry-schedule) of about 27.5 hours, plus a safety margin.
+</Tip>
+
+## Defense in depth
+
+| Control                                   | Protects against                                    |
+| ----------------------------------------- | --------------------------------------------------- |
+| Signature verification                    | Forged requests from third parties                  |
+| Timestamp tolerance                       | Replays of captured requests after 5 minutes        |
+| Deduplication by `webhook-id`             | Replays within the window and duplicate deliveries  |
+| HTTPS-only endpoints                      | Interception of requests in transit                 |
+| [Static source IPs](/security/static-ips) | Requests from unexpected networks                   |
+
+## Related
+
+- [Verifying signatures](/security/verifying-signatures)
+- [Message ordering](/delivery/ordering)
+- [Idempotency](/sending/idempotency)

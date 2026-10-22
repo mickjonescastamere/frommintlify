@@ -1,0 +1,73 @@
+---
+title: "Roles and permissions"
+description: "Control what each member of your workspace can see and change."
+icon: "user-shield"
+---
+
+Every workspace member has exactly one role. A role applies to the whole workspace, across both the test and live environments.
+
+## Roles
+
+<CardGroup cols={2}>
+  <Card title="Owner" icon="crown">
+    Full control, including billing, SSO, and deleting the workspace. Every workspace has at least one Owner.
+  </Card>
+  <Card title="Admin" icon="user-gear">
+    Manages members, API keys, and every setting except billing and workspace deletion.
+  </Card>
+  <Card title="Developer" icon="code">
+    Builds integrations: manages applications, endpoints, event types, and test API keys.
+  </Card>
+  <Card title="Viewer" icon="eye">
+    Read-only access to applications, messages, and delivery logs. Useful for support teams.
+  </Card>
+</CardGroup>
+
+## Permission matrix
+
+| Action                                         | Owner | Admin | Developer | Viewer |
+| ---------------------------------------------- | :---: | :---: | :-------: | :----: |
+| View applications, messages, and logs          | ✓     | ✓     | ✓         | ✓      |
+| Create and edit applications and endpoints     | ✓     | ✓     | ✓         |        |
+| Resend and recover messages                    | ✓     | ✓     | ✓         |        |
+| Manage event types                             | ✓     | ✓     | ✓         |        |
+| Configure transformations and portal branding  | ✓     | ✓     | ✓         |        |
+| Create test API keys                           | ✓     | ✓     | ✓         |        |
+| Create live API keys                           | ✓     | ✓     |           |        |
+| Invite and remove members                      | ✓     | ✓     |           |        |
+| Configure SSO and SCIM                         | ✓     | ✓     |           |        |
+| View the audit log                             | ✓     | ✓     |           |        |
+| Manage billing                                 | ✓     |       |           |        |
+| Delete the workspace                           | ✓     |       |           |        |
+
+<Note>
+  Developers can edit live applications and endpoints, but they can't create live API keys. This lets developers debug production deliveries without issuing new production credentials.
+</Note>
+
+## Change a member's role
+
+1. Go to **Settings** > **Members**.
+2. Find the member and open the **Role** menu.
+3. Select the new role. The change applies to the member's next request.
+
+Only Owners can promote another member to Owner. You can't remove or demote a workspace's last Owner.
+
+## Roles with SSO
+
+When [single sign-on](/account/sso) is enabled, you can map identity-provider groups to Hookline roles. SCIM provisioning keeps roles in sync as people move between groups. You can't change a role assigned through group mapping in the dashboard.
+
+## API keys and roles
+
+API keys don't have roles. [Scopes](/security/api-keys#scopes) control their access instead: `full`, `read_only`, or `send_only`. The [audit log](/features/audit-log) records actions made with an API key under the key's name.
+
+## Least-privilege tips
+
+- Give support and customer-success staff the **Viewer** role.
+- Keep the number of Owners small, typically two for redundancy.
+- Review the member list each quarter and remove people who no longer need access.
+
+## Related
+
+- [Team members](/account/team-members)
+- [Single sign-on](/account/sso)
+- [Audit log](/features/audit-log)

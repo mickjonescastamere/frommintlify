@@ -1,0 +1,84 @@
+---
+title: "Troubleshooting"
+description: "Diagnose the most common sending, delivery, and signature problems."
+icon: "screwdriver-wrench"
+---
+
+import GetHelp from "/snippets/get-help.mdx";
+import RetrySchedule from "/snippets/retry-schedule.mdx";
+
+Start with the message log. In the dashboard, open **Applications**, select the application, and click **Messages**. Each message shows every delivery attempt with the response status code, the first 4 KB of the response body, and the duration.
+
+## Sending problems
+
+<AccordionGroup>
+  <Accordion title="401 authentication_error">
+    The API key is missing, malformed, or revoked. Check that:
+
+    - The header is `Authorization: Bearer hl_live_...` or `hl_test_...`.
+    - You use a test key against test data and a live key against live data.
+    - Nobody rolled the key in **Settings** > **API keys**.
+  </Accordion>
+  <Accordion title="403 permission_error when creating messages">
+    The key's scope doesn't allow the action. A `read_only` key can't create anything. A `send_only` key can create messages but not applications or endpoints. See [API keys](/security/api-keys).
+  </Accordion>
+  <Accordion title="404 not_found_error for an application">
+    The application doesn't exist in this environment. Applications created in test don't exist in live. If you look up by `uid`, check that you set the `uid` when creating the application.
+  </Accordion>
+  <Accordion title="409 idempotency_conflict">
+    You reused an `Idempotency-Key` with a different request body within 24 hours. Generate a new key for each distinct request. See [Idempotency](/sending/idempotency).
+  </Accordion>
+  <Accordion title="429 rate_limit_error">
+    You exceeded the request rate for your environment. Wait for the number of seconds in the `Retry-After` header. The official SDKs retry automatically. See [Rate limits](/api-reference/rate-limits).
+  </Accordion>
+</AccordionGroup>
+
+## Delivery problems
+
+<AccordionGroup>
+  <Accordion title="A message was sent but no attempts appear">
+    No endpoint matched the message. Check that the application has at least one enabled endpoint, and that the endpoint's event type filter and [channels](/sending/channels) include the message.
+  </Accordion>
+  <Accordion title="Attempts fail with a 3xx status">
+    Hookline doesn't follow redirects. Update the endpoint URL to the final location, including the trailing slash if the server requires one.
+  </Accordion>
+  <Accordion title="Attempts fail with a timeout">
+    The receiver took longer than 15 seconds to respond. Return a `2xx` response immediately and process the event in a background job. See [Timeouts and responses](/delivery/timeouts-and-responses).
+  </Accordion>
+  <Accordion title="The receiver's firewall blocks requests">
+    Allowlist Hookline's [static IP addresses](/security/static-ips) for your workspace region.
+  </Accordion>
+  <Accordion title="An endpoint was disabled">
+    Hookline disables an endpoint after 5 days of consecutive failures, or immediately after a `410 Gone` response. Fix the receiver, re-enable the endpoint, then [recover failed messages](/delivery/replaying-messages). See [Endpoint health](/delivery/endpoint-health).
+  </Accordion>
+</AccordionGroup>
+
+### When are failed attempts retried?
+
+<RetrySchedule />
+
+## Signature verification fails
+
+Most signature failures have one of these causes:
+
+| Symptom                                    | Cause and fix                                                                              |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| Fails for every request                    | Wrong secret. Each endpoint has its own `whsec_` secret. Copy the one for this endpoint.    |
+| Fails only for some payloads               | The body was parsed and re-serialized. Verify the raw request bytes.                       |
+| Fails with a timestamp error               | The server clock is off by more than 5 minutes. Sync it with NTP.                          |
+| Started failing after a rotation           | The receiver still uses the old secret, which stops working 24 hours after rotation.       |
+| Fails in a framework with body middleware  | A JSON parser ran first. Register a raw body parser for the webhook route only.            |
+
+For working examples, see [Verifying signatures](/security/verifying-signatures).
+
+## Test locally
+
+Use the CLI to forward deliveries to your machine and watch each request:
+
+```bash
+hookline listen http://localhost:3000/webhooks
+```
+
+See [Local development](/cli/local-development) for details.
+
+<GetHelp />

@@ -1,0 +1,73 @@
+---
+title: "Operational webhooks"
+description: "Get notified when your customers' endpoints change, start failing, or get disabled."
+icon: "bell"
+---
+
+Operational webhooks are webhooks that Hookline sends to **you**. They tell you about events in your workspace so you can react automatically. For example, you can email a customer when their endpoint stops accepting deliveries.
+
+## Event types
+
+| Event type                  | Sent when                                                                    |
+| --------------------------- | ---------------------------------------------------------------------------- |
+| `endpoint.created`          | Someone creates an endpoint through the API, the dashboard, or the portal.   |
+| `endpoint.updated`          | An endpoint's URL, filters, or settings change.                              |
+| `endpoint.deleted`          | Someone deletes an endpoint.                                                 |
+| `endpoint.disabled`         | Hookline disables an endpoint after repeated failures or a `410 Gone`.       |
+| `message.attempt.failing`   | A message fails its 4th delivery attempt to an endpoint.                     |
+| `message.attempt.exhausted` | All 8 delivery attempts to an endpoint have failed.                          |
+
+## Set up a receiving endpoint
+
+<Steps>
+  <Step title="Add the endpoint">
+    Go to **Settings** > **Operational webhooks** and click **Add endpoint**. Enter the URL on your server that should receive the events.
+  </Step>
+  <Step title="Choose event types">
+    Select the events you care about. Leave the list empty to receive all of them.
+  </Step>
+  <Step title="Verify signatures">
+    Hookline signs operational webhooks exactly like regular deliveries. Copy the endpoint's signing secret and verify every request. See [Verifying signatures](/security/verifying-signatures).
+  </Step>
+</Steps>
+
+## Example payload
+
+```json endpoint.disabled
+{
+  "type": "endpoint.disabled",
+  "timestamp": "2026-10-23T09:30:00Z",
+  "data": {
+    "app_id": "app_2Zk81",
+    "app_uid": "acme-corp",
+    "endpoint_id": "ep_7Qm3",
+    "reason": "consecutive_failures",
+    "fail_since": "2026-10-18T09:12:44Z"
+  }
+}
+```
+
+The `reason` field is `consecutive_failures` when the endpoint failed every delivery for 5 days. It is `gone` when the endpoint responded with `410 Gone`.
+
+## Common uses
+
+<AccordionGroup>
+  <Accordion title="Warn customers before an endpoint is disabled">
+    Listen for `message.attempt.failing`. When it arrives for the same endpoint several times in a day, email the customer a link to the [consumer portal](/features/consumer-portal).
+  </Accordion>
+  <Accordion title="Keep your own database in sync">
+    Listen for `endpoint.created`, `endpoint.updated`, and `endpoint.deleted` to mirror endpoint configuration into your product. For example, show a webhook status badge on the customer's settings page.
+  </Accordion>
+  <Accordion title="Open a support ticket automatically">
+    Listen for `endpoint.disabled` and create a ticket in your help desk with the `app_uid` and `fail_since` values.
+  </Accordion>
+</AccordionGroup>
+
+<Note>
+  Operational webhooks use the same [retry schedule](/delivery/retry-schedule) as regular messages. They don't count toward your message quota.
+</Note>
+
+## Related
+
+- [Endpoint health](/delivery/endpoint-health)
+- [Replaying messages](/delivery/replaying-messages)

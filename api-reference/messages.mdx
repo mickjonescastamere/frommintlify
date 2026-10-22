@@ -1,0 +1,200 @@
+---
+title: "Messages"
+description: "Send events to an application, look up messages, inspect delivery attempts, and resend."
+icon: "envelope"
+---
+
+import PaginationParams from "/snippets/pagination-params.mdx";
+
+A message is one event sent to one application. Hookline fans it out to every matching endpoint and records a delivery attempt for each try.
+
+## The message object
+
+<ResponseField name="id" type="string">
+  Unique identifier, prefixed with `msg_`. Sent to endpoints in the `webhook-id` header.
+</ResponseField>
+<ResponseField name="event_type" type="string">
+  The event type name, such as `invoice.paid`.
+</ResponseField>
+<ResponseField name="payload" type="object">
+  The JSON body delivered to endpoints. Up to 1 MB.
+</ResponseField>
+<ResponseField name="channels" type="string[]">
+  Channels used to route the message.
+</ResponseField>
+<ResponseField name="event_id" type="string | null">
+  Your own unique ID for the event. Duplicates within 24 hours are ignored.
+</ResponseField>
+<ResponseField name="created_at" type="string">
+  ISO 8601 creation time.
+</ResponseField>
+
+## Create a message
+
+`POST /applications/{app}/messages`
+
+<ParamField path="app" type="string" required>
+  Application `id` or `uid`.
+</ParamField>
+<ParamField body="event_type" type="string" required>
+  An existing event type name.
+</ParamField>
+<ParamField body="payload" type="object" required>
+  The JSON object to deliver.
+</ParamField>
+<ParamField body="channels" type="string[]">
+  Up to 10 channels.
+</ParamField>
+<ParamField body="event_id" type="string">
+  Your idempotency ID. If a message with the same `event_id` was created in the last 24 hours, Hookline returns that message instead of creating a new one.
+</ParamField>
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.hookline.example/v1/applications/acme/messages \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_type": "invoice.paid",
+    "event_id": "evt_2bX9",
+    "payload": {
+      "type": "invoice.paid",
+      "id": "evt_2bX9",
+      "created_at": "2026-10-23T09:30:00Z",
+      "data": { "invoice_id": "inv_8842", "customer_id": "cus_1931", "amount": 4900, "currency": "usd" }
+    }
+  }'
+```
+
+```javascript Node.js
+const message = await hookline.messages.create("acme", {
+  eventType: "invoice.paid",
+  eventId: "evt_2bX9",
+  payload: {
+    type: "invoice.paid",
+    id: "evt_2bX9",
+    created_at: "2026-10-23T09:30:00Z",
+    data: { invoice_id: "inv_8842", customer_id: "cus_1931", amount: 4900, currency: "usd" },
+  },
+});
+```
+
+</CodeGroup>
+
+```json Response (202)
+{
+  "id": "msg_31Lq",
+  "event_type": "invoice.paid",
+  "event_id": "evt_2bX9",
+  "channels": [],
+  "payload": { "type": "invoice.paid", "id": "evt_2bX9", "...": "..." },
+  "created_at": "2026-10-23T09:30:01Z"
+}
+```
+
+The API responds with `202 Accepted` as soon as the message is stored. Delivery happens asynchronously.
+
+## List messages
+
+`GET /applications/{app}/messages`
+
+<PaginationParams />
+
+<ParamField query="event_types" type="string[]">
+  Only return messages of these event types. Repeat the parameter for several values.
+</ParamField>
+<ParamField query="channel" type="string">
+  Only return messages with this channel.
+</ParamField>
+<ParamField query="before" type="string">
+  Only return messages created before this ISO 8601 time.
+</ParamField>
+
+```bash cURL
+curl "https://api.hookline.example/v1/applications/acme/messages?event_types=invoice.paid&limit=20" \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY"
+```
+
+## Retrieve a message
+
+`GET /applications/{app}/messages/{msg_id}`
+
+```bash cURL
+curl https://api.hookline.example/v1/applications/acme/messages/msg_31Lq \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY"
+```
+
+## List delivery attempts
+
+`GET /applications/{app}/messages/{msg_id}/attempts`
+
+<PaginationParams />
+
+Each attempt has these fields:
+
+<ResponseField name="id" type="string">
+  Prefixed with `atmpt_`.
+</ResponseField>
+<ResponseField name="endpoint_id" type="string">
+  The endpoint this attempt targeted.
+</ResponseField>
+<ResponseField name="status" type="string">
+  One of `success`, `pending`, `sending`, or `failed`.
+</ResponseField>
+<ResponseField name="response_status_code" type="integer">
+  HTTP status returned by the endpoint, or `0` when no response was received.
+</ResponseField>
+<ResponseField name="response_body" type="string">
+  The first 4 KB of the response body.
+</ResponseField>
+<ResponseField name="duration_ms" type="integer">
+  Time until the response, in milliseconds.
+</ResponseField>
+<ResponseField name="triggered_by" type="string">
+  `scheduled` for automatic attempts, `manual` for resends.
+</ResponseField>
+
+```json Response
+{
+  "data": [
+    {
+      "id": "atmpt_9Vw2",
+      "endpoint_id": "ep_7Hd1",
+      "status": "success",
+      "response_status_code": 204,
+      "response_body": "",
+      "duration_ms": 182,
+      "triggered_by": "scheduled",
+      "created_at": "2026-10-23T09:30:02Z"
+    }
+  ],
+  "iterator": null,
+  "done": true
+}
+```
+
+## Resend a message
+
+`POST /applications/{app}/messages/{msg_id}/endpoints/{ep_id}/resend`
+
+Queues a new attempt of the message to one endpoint, with `triggered_by` set to `manual`. Returns `202 Accepted`.
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.hookline.example/v1/applications/acme/messages/msg_31Lq/endpoints/ep_7Hd1/resend \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY"
+```
+
+```javascript Node.js
+await hookline.messages.resend("acme", "msg_31Lq", "ep_7Hd1");
+```
+
+</CodeGroup>
+
+## Related
+
+- [Sending messages](/sending/messages)
+- [Idempotency](/sending/idempotency)
+- [Retry schedule](/delivery/retry-schedule)

@@ -1,0 +1,177 @@
+---
+title: "Applications"
+description: "Create, list, retrieve, update, and delete applications, which represent the customers who receive your webhooks."
+icon: "building"
+---
+
+import PaginationParams from "/snippets/pagination-params.mdx";
+
+An application represents one of your customers. Endpoints and messages always belong to an application. Create one application per customer account in your system.
+
+## The application object
+
+<ResponseField name="id" type="string">
+  Unique identifier, prefixed with `app_`.
+</ResponseField>
+<ResponseField name="name" type="string">
+  Display name shown in the dashboard and the consumer portal.
+</ResponseField>
+<ResponseField name="uid" type="string | null">
+  Your own unique ID for this customer. You can use it in place of `id` in every path.
+</ResponseField>
+<ResponseField name="metadata" type="object">
+  Up to 50 string key-value pairs for your own use.
+</ResponseField>
+<ResponseField name="rate_limit" type="integer | null">
+  Default maximum deliveries per second for this application's endpoints.
+</ResponseField>
+<ResponseField name="created_at" type="string">
+  ISO 8601 creation time.
+</ResponseField>
+<ResponseField name="updated_at" type="string">
+  ISO 8601 time of the last change.
+</ResponseField>
+
+```json Example
+{
+  "id": "app_2Zk8",
+  "name": "Acme Corp",
+  "uid": "acme",
+  "metadata": { "plan": "enterprise" },
+  "rate_limit": null,
+  "created_at": "2026-10-01T12:00:00Z",
+  "updated_at": "2026-10-01T12:00:00Z"
+}
+```
+
+## Create an application
+
+`POST /applications`
+
+<ParamField body="name" type="string" required>
+  Display name, up to 256 characters.
+</ParamField>
+<ParamField body="uid" type="string">
+  Your own unique ID. Letters, numbers, `-`, `_`, and `.`, up to 256 characters.
+</ParamField>
+<ParamField body="metadata" type="object">
+  Up to 50 string key-value pairs.
+</ParamField>
+<ParamField body="rate_limit" type="integer">
+  Default deliveries per second for new endpoints.
+</ParamField>
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.hookline.example/v1/applications \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: create-app-acme" \
+  -d '{"name": "Acme Corp", "uid": "acme", "metadata": {"plan": "enterprise"}}'
+```
+
+```javascript Node.js
+const app = await hookline.applications.create({
+  name: "Acme Corp",
+  uid: "acme",
+  metadata: { plan: "enterprise" },
+});
+```
+
+</CodeGroup>
+
+Returns the application object with status `201`. If the `uid` already exists, the request fails with `409 application_uid_taken`.
+
+<Tip>
+  Use `getOrCreate` in the SDKs, or the query parameter `get_if_exists=true`, to return the existing application instead of an error.
+</Tip>
+
+## List applications
+
+`GET /applications`
+
+<PaginationParams />
+
+<CodeGroup>
+
+```bash cURL
+curl "https://api.hookline.example/v1/applications?limit=50" \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY"
+```
+
+```javascript Node.js
+const page = await hookline.applications.list({ limit: 50 });
+```
+
+</CodeGroup>
+
+```json Response
+{
+  "data": [{ "id": "app_2Zk8", "name": "Acme Corp", "uid": "acme" }],
+  "iterator": null,
+  "done": true
+}
+```
+
+## Retrieve an application
+
+`GET /applications/{app_id_or_uid}`
+
+<ParamField path="app_id_or_uid" type="string" required>
+  The application's `id` or `uid`.
+</ParamField>
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.hookline.example/v1/applications/acme \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY"
+```
+
+```javascript Node.js
+const app = await hookline.applications.get("acme");
+```
+
+</CodeGroup>
+
+## Update an application
+
+`PATCH /applications/{app_id_or_uid}`
+
+Send only the fields you want to change. `name`, `uid`, `metadata`, and `rate_limit` can be updated. Setting `metadata` replaces the whole object.
+
+<CodeGroup>
+
+```bash cURL
+curl -X PATCH https://api.hookline.example/v1/applications/acme \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Acme Corporation"}'
+```
+
+```javascript Node.js
+await hookline.applications.update("acme", { name: "Acme Corporation" });
+```
+
+</CodeGroup>
+
+## Delete an application
+
+`DELETE /applications/{app_id_or_uid}`
+
+Deletes the application, its endpoints, and its message history. Pending retries are canceled. Returns `204 No Content`.
+
+<Warning>
+  Deletion is permanent. Delete applications only when the customer account itself is closed.
+</Warning>
+
+```bash cURL
+curl -X DELETE https://api.hookline.example/v1/applications/acme \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY"
+```
+
+## Related
+
+- [Applications guide](/sending/applications)
+- [Endpoints API](/api-reference/endpoints)

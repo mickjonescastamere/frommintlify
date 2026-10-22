@@ -1,0 +1,87 @@
+---
+title: "Endpoint health"
+description: "Monitor failing endpoints, understand automatic disabling, and bring endpoints back online."
+icon: "heart-pulse"
+---
+
+Hookline tracks the delivery success of every endpoint. When an endpoint keeps failing, Hookline warns you and eventually disables it, so it doesn't keep accumulating retries that will never succeed.
+
+## Health states
+
+| State        | Meaning                                                              | Deliveries          |
+| ------------ | -------------------------------------------------------------------- | ------------------- |
+| **Healthy**  | Recent attempts mostly succeed                                       | Sent normally       |
+| **Failing**  | Recent attempts mostly fail, but the endpoint is still enabled       | Sent and retried    |
+| **Disabled** | Disabled manually, by a `410 Gone` response, or by automatic disabling | Not sent          |
+
+The dashboard shows the state and the success rate for the last 24 hours on each endpoint's page.
+
+## Automatic disabling
+
+Hookline disables an endpoint automatically in two cases:
+
+<AccordionGroup>
+  <Accordion title="Five days of consecutive failures" icon="calendar-xmark">
+    If every delivery to an endpoint has failed for 5 consecutive days, Hookline disables it. A single successful delivery resets the counter.
+  </Accordion>
+  <Accordion title="The endpoint returns 410 Gone" icon="ban">
+    A `410` response means the receiver no longer wants webhooks at that URL. Hookline disables the endpoint immediately, without further retries.
+  </Accordion>
+</AccordionGroup>
+
+When Hookline disables an endpoint, it sends you an `endpoint.disabled` [operational webhook](/features/operational-webhooks):
+
+```json endpoint.disabled
+{
+  "type": "endpoint.disabled",
+  "timestamp": "2026-10-23T09:30:00Z",
+  "data": {
+    "app_id": "app_31xK",
+    "app_uid": "acme-corp",
+    "endpoint_id": "ep_9QmW",
+    "reason": "consecutive_failures",
+    "fail_since": "2026-10-18T09:12:44Z"
+  }
+}
+```
+
+The `reason` is `consecutive_failures` or `gone`.
+
+<Note>
+  Messages sent while an endpoint is disabled aren't queued for it. After you re-enable the endpoint, use [recover](/delivery/replaying-messages#recover-failed-messages) to deliver what it missed.
+</Note>
+
+## Re-enable an endpoint
+
+<Steps>
+  <Step title="Fix the underlying problem">
+    Check the latest attempts for the response code and body to find the cause. Common causes are expired TLS certificates, changed URLs, and verification errors after a secret change.
+  </Step>
+  <Step title="Enable the endpoint">
+    In the dashboard, open the endpoint and click **Enable**. With the API, set `disabled` to `false`:
+
+    ```bash
+    curl -X PATCH https://api.hookline.example/v1/applications/app_31xK/endpoints/ep_9QmW \
+      -H "Authorization: Bearer $HOOKLINE_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{ "disabled": false }'
+    ```
+  </Step>
+  <Step title="Recover missed messages">
+    Recover failed messages since the outage began, up to 14 days back. See [Replaying messages](/delivery/replaying-messages).
+  </Step>
+</Steps>
+
+## Disable an endpoint manually
+
+Disable an endpoint when you know it will be down for a while, such as during a planned migration. Disabling stops deliveries without deleting the endpoint, its secret, or its logs.
+
+## Alert your customers early
+
+Don't wait for an endpoint to be disabled. Subscribe to `message.attempt.failing` and notify the customer who owns the endpoint, for example by email or an in-app banner. Customers who use the [consumer portal](/features/consumer-portal) can also see endpoint health themselves.
+
+## Related
+
+- [Retry schedule](/delivery/retry-schedule)
+- [Operational webhooks](/features/operational-webhooks)
+- [Troubleshooting](/resources/troubleshooting)

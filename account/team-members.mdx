@@ -1,0 +1,65 @@
+---
+title: "Team members"
+description: "Invite teammates to your workspace, assign roles, and remove access."
+icon: "users"
+---
+
+Team members are people who can sign in to your workspace dashboard. Each member has exactly one role. Roles apply to both the test and live environments.
+
+## Roles at a glance
+
+| Role      | Typical use                                                     |
+| --------- | --------------------------------------------------------------- |
+| Owner     | Billing, workspace deletion, and everything an Admin can do.    |
+| Admin     | Manage members, API keys, SSO, and all settings.                |
+| Developer | Manage applications, endpoints, event types, and replay messages. |
+| Viewer    | Read-only access to the dashboard and logs.                     |
+
+For the full permission matrix, see [Roles and permissions](/security/roles-and-permissions).
+
+## Invite a member
+
+<Steps>
+  <Step title="Open the members page">
+    Go to **Settings** > **Members** and click **Invite member**.
+  </Step>
+  <Step title="Enter details">
+    Enter one or more email addresses, separated by commas. Choose a role.
+  </Step>
+  <Step title="Send the invitation">
+    Click **Send invite**. Each person receives an email with a link that stays valid for 7 days.
+  </Step>
+</Steps>
+
+Owners and Admins can invite members. Admins can't invite new Owners.
+
+<Note>
+  If your workspace uses [single sign-on](/account/sso) with SCIM, your identity provider manages members. Manual invitations are turned off.
+</Note>
+
+## Change a member's role
+
+1. Go to **Settings** > **Members**.
+2. Click the role next to the member's name.
+3. Select the new role.
+
+The change takes effect on the member's next request. A workspace must always have at least one Owner.
+
+## Remove a member
+
+Click the menu next to the member's name and select **Remove from workspace**. The member is signed out immediately.
+
+Removing a member doesn't delete the API keys they created. Review **Settings** > **API keys** and roll any keys the person had access to. See [API keys](/security/api-keys).
+
+## Pending invitations
+
+Pending invitations appear at the bottom of the members list. From there you can:
+
+- Click **Resend** to send the email again and reset the 7-day expiry.
+- Click **Revoke** to cancel the invitation.
+
+## Related
+
+- [Roles and permissions](/security/roles-and-permissions)
+- [Single sign-on](/account/sso)
+- [Audit log](/features/audit-log)

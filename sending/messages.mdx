@@ -1,0 +1,113 @@
+---
+title: "Messages"
+description: "Send events to your customers by creating messages, and track every delivery."
+icon: "envelope"
+---
+
+A message is one event sent to one application. When you create a message, Hookline fans it out to every enabled endpoint in that application whose event types and channels match, then signs and delivers it.
+
+## Send a message
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.hookline.example/v1/applications/cus_1931/messages \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_type": "invoice.paid",
+    "event_id": "evt_2bX9",
+    "payload": {
+      "type": "invoice.paid",
+      "id": "evt_2bX9",
+      "created_at": "2026-10-23T09:30:00Z",
+      "data": { "invoice_id": "inv_8842", "customer_id": "cus_1931", "amount": 4900, "currency": "usd" }
+    }
+  }'
+```
+
+```javascript Node.js
+await hookline.messages.create("cus_1931", {
+  eventType: "invoice.paid",
+  eventId: "evt_2bX9",
+  payload: {
+    type: "invoice.paid",
+    id: "evt_2bX9",
+    created_at: new Date().toISOString(),
+    data: { invoice_id: "inv_8842", customer_id: "cus_1931", amount: 4900, currency: "usd" },
+  },
+});
+```
+
+```python Python
+hookline.messages.create(
+    "cus_1931",
+    event_type="invoice.paid",
+    event_id="evt_2bX9",
+    payload={
+        "type": "invoice.paid",
+        "id": "evt_2bX9",
+        "created_at": "2026-10-23T09:30:00Z",
+        "data": {"invoice_id": "inv_8842", "customer_id": "cus_1931", "amount": 4900, "currency": "usd"},
+    },
+)
+```
+
+</CodeGroup>
+
+The API responds with `202 Accepted` as soon as the message is stored. Delivery happens asynchronously.
+
+## Message fields
+
+| Field        | Required | Description                                                                |
+| ------------ | -------- | -------------------------------------------------------------------------- |
+| `event_type` | Yes      | The name of an existing [event type](/sending/event-types).                |
+| `payload`    | Yes      | A JSON object, up to 1 MB. Delivered as the request body.                  |
+| `event_id`   | No       | Your ID for the event. Duplicates within 24 hours are ignored.             |
+| `channels`   | No       | Array of [channels](/sending/channels) used for routing.                   |
+
+## What gets delivered
+
+Each endpoint receives an HTTP `POST` with:
+
+- The `payload` as a JSON body, exactly as you sent it.
+- The `content-type: application/json` header.
+- The `webhook-id`, `webhook-timestamp`, and `webhook-signature` headers. See [Verifying signatures](/security/verifying-signatures).
+- Any [custom headers](/features/custom-headers) configured on the endpoint.
+
+## Send messages without blocking your app
+
+Creating a message is fast, but it's still a network call. Send messages after your database transaction commits, and don't let a Hookline error roll back your business logic.
+
+<Steps>
+  <Step title="Write an outbox row">
+    In the same transaction as your business change, insert a row in an `outbox` table with the event type and payload.
+  </Step>
+  <Step title="Send from a worker">
+    A background worker reads the outbox and calls Hookline with `event_id` set to the outbox row ID.
+  </Step>
+  <Step title="Mark as sent">
+    Delete or flag the row after a successful response. If the worker crashes, the `event_id` makes the resend safe.
+  </Step>
+</Steps>
+
+## Track deliveries
+
+List the attempts for a message to see what happened at each endpoint:
+
+```bash
+curl https://api.hookline.example/v1/applications/cus_1931/messages/msg_9fK2pQ/attempts \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY"
+```
+
+In the dashboard, open **Applications**, choose the application, and then select **Messages**.
+
+## Retention
+
+Messages and attempts are kept for 30 days on Free, 90 days on Pro, and up to one year on Enterprise. After that they can't be replayed.
+
+## Related
+
+- [Idempotency](/sending/idempotency)
+- [Retry schedule](/delivery/retry-schedule)
+- [Messages API](/api-reference/messages)

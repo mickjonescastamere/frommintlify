@@ -1,0 +1,12 @@
+| Attempt | Delay after previous attempt | Time since first attempt |
+| ------- | ---------------------------- | ------------------------ |
+| 1       | Immediately                  | 0                        |
+| 2       | 5 seconds                    | 5 seconds                |
+| 3       | 5 minutes                    | ~5 minutes               |
+| 4       | 30 minutes                   | ~35 minutes              |
+| 5       | 2 hours                      | ~2 hours 35 minutes      |
+| 6       | 5 hours                      | ~7 hours 35 minutes      |
+| 7       | 10 hours                     | ~17 hours 35 minutes     |
+| 8       | 10 hours                     | ~27 hours 35 minutes     |
+
+Each delay includes up to ±10% random jitter so that retries from many messages don't arrive at your customer's server at the same moment.

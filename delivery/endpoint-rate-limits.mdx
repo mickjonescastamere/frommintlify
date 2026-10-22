@@ -1,0 +1,85 @@
+---
+title: "Endpoint rate limits"
+description: "Cap how many deliveries per second Hookline sends to an endpoint, so bursts don't overload your customers."
+icon: "gauge-high"
+---
+
+A burst of events in your app, such as a bulk import or a recover after an outage, can turn into thousands of webhooks in a few seconds. Small servers can't always absorb that. Endpoint rate limits let you cap the delivery rate.
+
+<Note>
+  This page covers the rate at which Hookline **delivers** webhooks. For limits on calls you make **to** the Hookline API, see [API rate limits](/api-reference/rate-limits).
+</Note>
+
+## How it works
+
+Set `rate_limit` to the maximum number of deliveries per second. When messages arrive faster than that:
+
+- Hookline **queues** the excess deliveries. It never drops them.
+- Queued deliveries go out as capacity frees up, in the order they were created.
+- Queue time doesn't count as a failed attempt, and it doesn't advance the [retry schedule](/delivery/retry-schedule).
+
+When `rate_limit` isn't set, Hookline delivers as fast as messages arrive.
+
+## Where to set it
+
+You can set a rate limit on an endpoint, on an application, or both.
+
+| Level       | Applies to                                       | Field                       |
+| ----------- | ------------------------------------------------ | --------------------------- |
+| Endpoint    | Deliveries to that single endpoint               | `rate_limit` on the endpoint |
+| Application | Combined deliveries to all endpoints in the app  | `rate_limit` on the application |
+
+If both are set, both apply, and the stricter limit wins.
+
+## Set an endpoint rate limit
+
+<Tabs>
+  <Tab title="Dashboard">
+    1. Open the endpoint and click **Edit**.
+    2. Under **Advanced**, enter a value in **Rate limit (per second)**.
+    3. Click **Save**.
+  </Tab>
+  <Tab title="API">
+    ```bash
+    curl -X PATCH https://api.hookline.example/v1/applications/app_31xK/endpoints/ep_9QmW \
+      -H "Authorization: Bearer $HOOKLINE_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{ "rate_limit": 10 }'
+    ```
+  </Tab>
+  <Tab title="Node.js">
+    ```javascript
+    await hookline.endpoints.update("app_31xK", "ep_9QmW", { rateLimit: 10 });
+    ```
+  </Tab>
+</Tabs>
+
+Set `rate_limit` to `null` to remove the limit.
+
+## Choosing a value
+
+<Steps>
+  <Step title="Ask your customer">
+    The receiver knows its own capacity best. Customers can also set their own limit in the [consumer portal](/features/consumer-portal).
+  </Step>
+  <Step title="Check response times">
+    Endpoints that respond in 200 ms on a single worker can handle about 5 requests per second. Look at `duration_ms` on recent attempts to estimate capacity.
+  </Step>
+  <Step title="Leave headroom">
+    Set the limit below the receiver's measured maximum, so normal traffic doesn't build a permanent queue.
+  </Step>
+</Steps>
+
+<Warning>
+  A rate limit lower than your sustained event rate makes the queue grow without bound, and deliveries fall further and further behind. If an endpoint's queue keeps growing, raise the limit or reduce what it subscribes to with [event type filters](/sending/event-types) or [channels](/sending/channels).
+</Warning>
+
+## Receivers that return 429
+
+If a receiver responds with `429 Too Many Requests`, Hookline treats the attempt as failed and retries it on the normal schedule. A configured rate limit is a smoother option, because it avoids the failure entirely.
+
+## Related
+
+- [Ordering](/delivery/ordering)
+- [Replaying messages](/delivery/replaying-messages)
+- [Applications](/sending/applications)

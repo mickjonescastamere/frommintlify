@@ -1,0 +1,77 @@
+---
+title: "Single sign-on"
+description: "Let your team sign in through your identity provider with SAML 2.0 or OIDC, and provision members with SCIM."
+sidebarTitle: "Single sign-on (SSO)"
+icon: "right-to-bracket"
+---
+
+import PlanAvailability from "/snippets/plan-availability.mdx";
+
+<PlanAvailability plan="Enterprise" />
+
+Single sign-on (SSO) lets members sign in to Hookline with your company identity provider (IdP). Hookline supports SAML 2.0 and OpenID Connect (OIDC), and works with any standards-compliant IdP.
+
+## Before you begin
+
+- You need the **Owner** or **Admin** role.
+- You need admin access to your identity provider.
+- Decide which email domains belong to your company, for example `yourcompany.example`.
+
+## Configure SSO
+
+<Tabs>
+  <Tab title="SAML 2.0">
+    <Steps>
+      <Step title="Copy Hookline's service provider details">
+        Go to **Settings** > **Single sign-on**, select **SAML 2.0**, and copy the **ACS URL** and **Entity ID**.
+      </Step>
+      <Step title="Create an app in your IdP">
+        Create a new SAML application. Paste the ACS URL and Entity ID. Set the Name ID format to **Email address**.
+      </Step>
+      <Step title="Map attributes">
+        Send `email`, `first_name`, and `last_name` attributes. Optionally send a `hookline_role` attribute with `admin`, `developer`, or `viewer`.
+      </Step>
+      <Step title="Upload the IdP metadata">
+        Download the metadata XML from your IdP and upload it in Hookline. Click **Save**.
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="OIDC">
+    <Steps>
+      <Step title="Register Hookline in your IdP">
+        Create an OIDC web application. Use the **Redirect URI** shown in **Settings** > **Single sign-on** > **OIDC**.
+      </Step>
+      <Step title="Enter client credentials">
+        Paste the **Issuer URL**, **Client ID**, and **Client secret** from your IdP into Hookline.
+      </Step>
+      <Step title="Save">
+        Click **Save**. Hookline requests the `openid`, `email`, and `profile` scopes.
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+## Test and enforce SSO
+
+1. Click **Test connection** and sign in through your IdP in the new window.
+2. Verify your email domains under **Domains**. Hookline gives you a DNS TXT record to add.
+3. Turn on **Require SSO** to block password sign-in for everyone with a verified domain.
+
+<Warning>
+  Keep at least one Owner who can sign in if your IdP has an outage. Owners can always use the **Emergency access** link sent to their email, which is recorded in the [audit log](/features/audit-log).
+</Warning>
+
+## Provision members with SCIM
+
+SCIM 2.0 keeps Hookline members in sync with your IdP. When you unassign someone in the IdP, Hookline removes them from the workspace automatically.
+
+1. Go to **Settings** > **Single sign-on** > **SCIM** and click **Generate token**.
+2. In your IdP, enter the SCIM base URL `https://api.hookline.example/scim/v2` and the token.
+3. Assign users or groups to the Hookline app.
+
+Group names that match `hookline-admin`, `hookline-developer`, or `hookline-viewer` set the member's role.
+
+## Related
+
+- [Team members](/account/team-members)
+- [Roles and permissions](/security/roles-and-permissions)

@@ -1,22 +1,54 @@
 ---
 title: "Introduction"
-description: "Welcome to your project"
+description: "Send webhooks your customers can rely on. Hookline signs, delivers, retries, and logs every event so you don't have to."
+icon: "house"
 ---
 
-Write a short description of your product here. What it does, who it's for, and what they can accomplish with it.
+Hookline is a webhook delivery platform. You send an event to Hookline with one API call, and Hookline delivers it to every endpoint your customers have registered. It signs each request, retries failures on a fixed schedule, and keeps a searchable log of every attempt.
 
-From a branch.
+Use Hookline when you want to offer webhooks in your product without building and running the delivery infrastructure yourself.
 
-<Tip>
-  Ready to make this your own? Start by editing this page. Update your `docs.json` file to customize your site. Then fill out the [Quickstart](/quickstart) page.
-</Tip>
+## How it works
 
-<Card title="Quickstart" icon="rocket" href="/quickstart">
-  This card links to the quickstart page in your project.
-</Card>
-<Card title="Components" icon="puzzle-piece" href="https://mintlify.com/docs/components">
-  Add cards, callouts, steps, tabs, and more to design and structure your pages.
-</Card>
-<Card title="Settings" icon="gear" href="https://mintlify.com/docs/organize/settings">
-  Set your site name, branding, and navigation in the `docs.json` file.
-</Card>
+<Steps>
+  <Step title="Model your customers as applications">
+    Create one [application](/sending/applications) for each customer that receives webhooks from you.
+  </Step>
+  <Step title="Let customers add endpoints">
+    Customers register HTTPS URLs as [endpoints](/getting-started/core-concepts), either through your UI and the API or through the embeddable [consumer portal](/features/consumer-portal).
+  </Step>
+  <Step title="Send messages">
+    When something happens in your app, [send a message](/sending/messages) with an event type and a JSON payload. Hookline fans it out to every matching endpoint.
+  </Step>
+  <Step title="Hookline handles delivery">
+    Every request is [signed](/security/verifying-signatures), [retried](/delivery/retry-schedule) on failure, and recorded so you and your customers can [replay](/delivery/replaying-messages) it later.
+  </Step>
+</Steps>
+
+## Start here
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/getting-started/quickstart">
+    Send your first webhook in about five minutes.
+  </Card>
+  <Card title="Core concepts" icon="diagram-project" href="/getting-started/core-concepts">
+    Learn how applications, endpoints, event types, and messages fit together.
+  </Card>
+  <Card title="Verify signatures" icon="shield-check" href="/security/verifying-signatures">
+    Show your customers how to confirm a webhook really came from you.
+  </Card>
+  <Card title="API reference" icon="square-terminal" href="/api-reference/introduction">
+    Explore every endpoint of the Hookline REST API.
+  </Card>
+</CardGroup>
+
+## Explore by task
+
+| I want to…                              | Go to                                                      |
+| --------------------------------------- | ---------------------------------------------------------- |
+| Integrate from my backend               | [SDKs overview](/sdks/overview)                            |
+| Test webhooks on my laptop              | [Local development with the CLI](/cli/local-development)   |
+| Let customers manage their own endpoints | [Consumer portal](/features/consumer-portal)              |
+| Reshape payloads per endpoint           | [Transformations](/features/transformations)               |
+| Understand why a delivery failed        | [Troubleshooting](/resources/troubleshooting)              |
+| Move off a homegrown webhook system     | [Migrating from an in-house system](/resources/migrating-from-in-house) |

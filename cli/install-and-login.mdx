@@ -1,0 +1,97 @@
+---
+title: "Install and log in"
+description: "Install the Hookline CLI, authenticate it with your workspace, and switch between environments."
+icon: "download"
+---
+
+import TestModeNote from "/snippets/test-mode-note.mdx";
+
+The Hookline CLI lets you send test messages, inspect event types and endpoints, and forward webhooks to your local machine. It works on macOS, Linux, and Windows.
+
+## Install the CLI
+
+<Tabs>
+  <Tab title="npm">
+    The CLI requires Node.js 18 or later.
+
+    ```bash
+    npm install -g @hookline/cli
+    ```
+  </Tab>
+  <Tab title="Homebrew">
+    ```bash
+    brew install hookline/tap/hookline
+    ```
+  </Tab>
+</Tabs>
+
+Confirm that the install worked:
+
+```bash
+hookline --version
+```
+
+## Log in
+
+<Steps>
+  <Step title="Start the login flow">
+    ```bash
+    hookline login
+    ```
+
+    The CLI opens [app.hookline.example](https://app.hookline.example) in your browser and shows a pairing code in the terminal.
+  </Step>
+  <Step title="Approve the CLI">
+    Check that the code in the browser matches the code in your terminal, choose a workspace, and click **Authorize CLI**.
+  </Step>
+  <Step title="Verify the session">
+    The terminal prints the workspace name and region. The CLI stores a scoped token in `~/.config/hookline/config.toml`.
+  </Step>
+</Steps>
+
+<Tip>
+  On a server or in CI where no browser is available, set the `HOOKLINE_API_KEY` environment variable instead of running `hookline login`. The CLI uses that key for every command.
+</Tip>
+
+## Choose an environment
+
+Every command runs against the **test** environment by default. Pass `--env live` to target live data:
+
+```bash
+hookline endpoints list --app app_2Zk8 --env live
+```
+
+<TestModeNote />
+
+## The config file
+
+`hookline login` writes a file like this:
+
+```toml ~/.config/hookline/config.toml
+[default]
+workspace = "ws_7Rt3Acme"
+region = "us"
+env = "test"
+token = "hlcli_..."
+```
+
+You can edit `env` to change the default environment. Don't commit this file or share the token.
+
+## Log out
+
+```bash
+hookline logout
+```
+
+`logout` revokes the CLI token on the server and deletes it from the config file.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Local development" icon="laptop-code" href="/cli/local-development">
+    Forward webhooks to `localhost` with `hookline listen`.
+  </Card>
+  <Card title="Command reference" icon="list" href="/cli/command-reference">
+    See every command and flag.
+  </Card>
+</CardGroup>

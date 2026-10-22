@@ -1,0 +1,78 @@
+---
+title: "Event types"
+description: "Define, name, and version the kinds of events your app sends."
+icon: "tags"
+---
+
+An event type names a kind of event your app sends, such as `invoice.paid`. Endpoints subscribe to event types, and the consumer portal lists them so customers know what they can receive.
+
+## Naming rules
+
+Event type names must:
+
+- Use the `resource.action` pattern, for example `customer.created` or `invoice.payment_failed`.
+- Contain only lowercase letters, digits, underscores, and dots.
+- Be 64 characters or fewer.
+
+Use past-tense verbs for things that already happened (`order.shipped`), and keep the resource name singular.
+
+| Good                     | Avoid                  | Why                                 |
+| ------------------------ | ---------------------- | ----------------------------------- |
+| `invoice.paid`           | `InvoicePaid`          | Use lowercase, dot-separated names. |
+| `subscription.canceled`  | `cancel_subscription`  | Name the event, not a command.      |
+| `order.shipped`          | `orders.ship`          | Use singular nouns and past tense.  |
+
+## Create an event type
+
+```bash
+curl https://api.hookline.example/v1/event-types \
+  -H "Authorization: Bearer $HOOKLINE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "invoice.paid",
+    "description": "Sent when an invoice is paid in full.",
+    "schema": {
+      "type": "object",
+      "required": ["invoice_id", "amount", "currency"],
+      "properties": {
+        "invoice_id": { "type": "string" },
+        "amount": { "type": "integer", "description": "Amount in the smallest currency unit." },
+        "currency": { "type": "string", "minLength": 3, "maxLength": 3 }
+      }
+    }
+  }'
+```
+
+You can also create event types in the dashboard under **Event types** > **New event type**.
+
+<Note>
+  Hookline doesn't reject messages whose payload doesn't match the schema. The schema documents the payload for your customers and powers examples in the [event catalog](/sending/event-catalog).
+</Note>
+
+## Event type fields
+
+| Field          | Description                                                                   |
+| -------------- | ----------------------------------------------------------------------------- |
+| `name`         | Unique name in the `resource.action` format.                                  |
+| `description`  | Shown in the dashboard, consumer portal, and event catalog.                   |
+| `schema`       | Optional JSON Schema for the payload.                                         |
+| `archived`     | Archived types are hidden from new subscriptions but still deliverable.       |
+| `feature_flag` | Optional. Hides the type from consumers who don't have the flag enabled.      |
+
+## Change an event type safely
+
+Consumers write code against your payloads, so treat event types as a public API.
+
+- **Adding** an optional field is safe. Update the schema with `PATCH /event-types/{name}`.
+- **Removing or renaming** a field is a breaking change. Create a new versioned type, such as `invoice.paid.v2`, and send both during a migration window.
+- **Retiring** a type: call `DELETE /event-types/{name}`. This archives the type rather than deleting it, so existing subscriptions keep working.
+
+## Roll out new event types gradually
+
+Set `feature_flag` to hide a new event type until you're ready. Only consumers whose portal session includes that flag see it. This lets you beta-test events with selected customers.
+
+## Related
+
+- [Event types API](/api-reference/event-types)
+- [Event catalog](/sending/event-catalog)
+- [Payload best practices](/sending/payload-best-practices)

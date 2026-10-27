@@ -21,7 +21,7 @@
               "sdks/overview",
               "sdks/node",
               "sdks/python",
-              "sdks/go"
+              "sdks/gonew"
             ]
           },
           {
